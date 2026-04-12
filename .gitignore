@@ -1,0 +1,10 @@
+# Build artifacts
+prd/ircserv
+prd/*.o
+prd/interface/*.o
+prd/domain/*.o
+
+# Editor / OS files
+.DS_Store
+*.swp
+*~
