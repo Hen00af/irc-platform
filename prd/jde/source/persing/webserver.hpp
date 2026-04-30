@@ -20,9 +20,12 @@ using std::cerr;
 
 class Conf;
 
-void parsing(int argc, char **argv, Conf &data);
-void validate_arguments(int argc, char **argv);
+
+/* conf_utils */
 bool my_atoi(const std::string &str);
+std::string trim(const std::string &input);
+bool is_valid_method(const std::string &method);
+bool is_valid_listing_value(const std::string &value);
 
 /*
 ** Raw config structures
@@ -64,6 +67,9 @@ private:
     std::vector<std::string> _method;
 };
 
+/*
+*** server class
+*/
 class Servers {
 public:
     Servers();
@@ -124,11 +130,12 @@ public:
     void check_directive();
     void is_directive(std::string line, int pos);
     void stock_data();
-    void print_all_data(); 
     void init_file_pos();
     void setServers();
     void check_data();
     void print_raw_data();
+
+    const std::vector<Servers*> &get_Servers() const;
 
     std::string ft_first_word(std::string line);
     std::vector<std::string> split_words(std::string line);
@@ -137,7 +144,7 @@ private:
     std::vector<std::string> _file;
     std::vector<std::string> _directives;
     std::vector<int> _file_pos;
-    std::vector<Servers*> _servers; // これでエラーが消えます
+    std::vector<Servers*> _servers;
 };
 /*
 ** Exceptions

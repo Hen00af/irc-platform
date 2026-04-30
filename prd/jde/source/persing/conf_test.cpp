@@ -1,4 +1,5 @@
 #include "webserver.hpp"
+#include "../logging/logging.hpp"
 #include <iostream>
 #include <fstream>
 
@@ -39,7 +40,7 @@ int main(int ac, char **av) {
 
         // 5. 結果の表示（正しく格納されたか確認）
         std::cout << "\n--- Parsed Configuration Data ---" << std::endl;
-        conf.print_all_data();
+        print_all_data(conf);
 
     } catch (const std::exception& e) {
         // 自作例外クラス（ArgvErr, DirWrongなど）をキャッチして表示

@@ -2,29 +2,13 @@
 #include "../server/server.hpp" 
 #include <algorithm>
 
-namespace {
-
-std::string trim(const std::string &input) {
-    const std::string spaces = " \t\r\n";
-    const std::string::size_type start = input.find_first_not_of(spaces);
-    if (start == std::string::npos)
-        return "";
-    const std::string::size_type end = input.find_last_not_of(spaces);
-    return input.substr(start, end - start + 1);
-}
-
-bool is_valid_method(const std::string &method) {
-    return method == "GET" || method == "POST" || method == "DELETE";
-}
-
-bool is_valid_listing_value(const std::string &value) {
-    return value == "on" || value == "off";
-}
-
-} // namespace
+/*
+*** location
+*/
 
 Location::Location() {}
 
+// setter
 void Location::setDir(const std::string &dir) { _dir = dir; }
 void Location::setRoot(const std::string &root) { _root = root; }
 void Location::setIndex(const std::string &index) { _index = index; }
@@ -32,6 +16,7 @@ void Location::setListing(const std::string &listing) { _listing = listing; }
 void Location::setRedir(const std::string &redir) { _redir = redir; }
 void Location::addMethod(const std::string &method) { _method.push_back(method); }
 
+// getter
 const std::string &Location::getDir() const { return _dir; }
 const std::string &Location::getRoot() const { return _root; }
 const std::string &Location::getIndex() const { return _index; }
@@ -39,6 +24,12 @@ const std::string &Location::getListing() const { return _listing; }
 const std::string &Location::getRedir() const { return _redir; }
 const std::vector<std::string> &Location::getMethod() const { return _method; }
 
+
+/*
+**  Server class
+*/
+
+// 中間表現として機能。
 Servers::Servers() {}
 
 Servers::~Servers() {
@@ -193,23 +184,13 @@ void stock_server(const std::string &line, Servers *server) {
         server->addErrorPage(tokens[1], tokens[2]);
 }
 
-bool my_atoi(const std::string &str) {
-    if (str.empty())
-        return false;
-    for (size_t i = 0; i < str.size(); ++i) {
-        if (!std::isdigit(static_cast<unsigned char>(str[i])))
-            return false;
-    }
-    return true;
-}
+/*
+**  Conf class
+*/
 
-void validate_arguments(int argc, char **argv) {
-    if (argc != 2 || argv == NULL || argv[1] == NULL)
-        throw ArgvErr();
-}
+// getter
+const std::vector<Servers*> &Conf::get_Servers() const { return _servers;};
 
-
-/* -- constructor -- */
 Conf::Conf() {
     _directives.push_back("server");
     _directives.push_back("listen");
@@ -224,7 +205,6 @@ Conf::Conf() {
     _directives.push_back("redir");
 }
 
-/* -- destructor -- */
 Conf::~Conf() {
     for (size_t i = 0; i < _servers.size(); ++i) {
         delete _servers[i];
@@ -234,8 +214,6 @@ Conf::~Conf() {
     _file_pos.clear();
     _directives.clear();
 }
-
-/* -- FUNCTIONS -- */
 
 void Conf::check_data() {
     for (size_t i = 0; i < _servers.size(); ++i) {
@@ -262,42 +240,6 @@ void Conf::check_data() {
             throw ListingErr();
         if (!_servers[i]->check_client_size())
             throw SizeErr();
-    }
-}
-
-void Conf::print_all_data() {
-    for (size_t i = 0; i < _servers.size(); ++i) {
-        cout << "--- server " << i << ":" << endl;
-        cout << "name = " << _servers[i]->getName() << endl;
-        cout << "listen = " << _servers[i]->getListen() << endl;
-        cout << "root = " << _servers[i]->getRoot() << endl;
-        cout << "index = " << _servers[i]->getIndex() << endl;
-        cout << "body = " << _servers[i]->getBody() << endl;
-        cout << "listing = " << _servers[i]->getListing() << endl; // getListenになっていたのを修正
-        
-        cout << "method = ";
-        for (size_t len = 0; len < _servers[i]->getMethod().size(); ++len)
-            cout << _servers[i]->getMethod()[len] << " ";
-        cout << endl;
-
-        cout << "error pages:" << endl;
-        std::map<std::string, std::string> copy = _servers[i]->getError();
-        for (std::map<std::string, std::string>::iterator it = copy.begin(); it != copy.end(); ++it) {
-            cout << "error " << it->first << " = " << it->second << endl;
-        }
-
-        for (size_t x = 0; x < _servers[i]->getLocation().size(); ++x) {
-            cout << "- location " << x << ":" << endl;
-            cout << "dir = " << _servers[i]->getLocation()[x]->getDir() << endl;
-            cout << "root = " << _servers[i]->getLocation()[x]->getRoot() << endl;
-            cout << "index = " << _servers[i]->getLocation()[x]->getIndex() << endl;
-            cout << "listing = " << _servers[i]->getLocation()[x]->getListing() << endl;
-            cout << "redir = " << _servers[i]->getLocation()[x]->getRedir() << endl;
-            cout << "methods = ";
-            for (size_t len = 0; len < _servers[i]->getLocation()[x]->getMethod().size(); ++len)
-                cout << _servers[i]->getLocation()[x]->getMethod()[len] << " ";
-            cout << endl;
-        }
     }
 }
 
@@ -330,7 +272,7 @@ void Conf::stock_data() {
     for (size_t i = 0; i < len; ++i) {
         if (_file_pos[i] == 0) {
             if (ft_first_word(_file[i]) == "server") {
-                setServers(); // 新しいサーバーを追加
+                setServers();
                 nb_server++;
                 nb_locations = -1;
             } else {
@@ -338,7 +280,7 @@ void Conf::stock_data() {
             }
         } else {
             if (ft_first_word(_file[i]) == "location") {
-                _servers[nb_server]->setLocation(); // 新しいLocationを追加
+                _servers[nb_server]->setLocation();
                 nb_locations++;
             }
             _servers[nb_server]->stock_location(_file[i], nb_locations);
@@ -346,15 +288,12 @@ void Conf::stock_data() {
     }
 }
 
-// ... stock_serverの実装はそのまま ...
-
 void Conf::is_directive(std::string line, int pos) {
     (void)pos;
     std::vector<std::string> tokens = split_words(line);
     if (tokens.empty()) return;
 
     std::string first_word = tokens[0];
-    // ループ条件と、比較対象を修正
     for (size_t i = 0; i < _directives.size(); ++i) {
         if (first_word == _directives[i])
             return;
@@ -384,9 +323,6 @@ void Conf::setServers() {
     _servers.push_back(new Servers());
 }
 
-void Conf::print_raw_data() {
-    print_all_data();
-}
 
 std::string Conf::ft_first_word(std::string line) {
     std::vector<std::string> tokens = split_words(line);
@@ -395,10 +331,47 @@ std::string Conf::ft_first_word(std::string line) {
     return tokens[0];
 }
 
+/*
+*** utils for paese
+*/
+
+void validate_arguments(int argc, char **argv) {
+    if (argc != 2 || argv == NULL || argv[1] == NULL)
+        throw ArgvErr();
+}
+
+bool my_atoi(const std::string &str) {
+    if (str.empty())
+        return false;
+    for (size_t i = 0; i < str.size(); ++i) {
+        if (!std::isdigit(static_cast<unsigned char>(str[i])))
+            return false;
+    }
+    return true;
+}
+
+std::string trim(const std::string &input) {
+    const std::string spaces = " \t\r\n";
+    const std::string::size_type start = input.find_first_not_of(spaces);
+    if (start == std::string::npos)
+        return "";
+    const std::string::size_type end = input.find_last_not_of(spaces);
+    return input.substr(start, end - start + 1);
+}
+
+bool is_valid_method(const std::string &method) {
+    return method == "GET" || method == "POST" || method == "DELETE";
+}
+
+bool is_valid_listing_value(const std::string &value) {
+    return value == "on" || value == "off";
+}
+
 std::vector<std::string> Conf::split_words(std::string line) {
     std::vector<std::string> tokens;
     std::istringstream iss(trim(line));
     std::string token;
+
     while (iss >> token)
         tokens.push_back(token);
     return tokens;

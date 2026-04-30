@@ -1,4 +1,6 @@
 #include <csignal>
+#include "source/persing/webserver.hpp"
+#include "source/logging/logging.hpp"
 
 Server serv;
 
@@ -17,11 +19,7 @@ int main(int ac, char **av, char **envp) {
         return (1);
     }
 
-    // log for config
-    {
-        logging log;
-        log.print_all_data(data);
-    }
+    print_all_data(data);
 
     return 0;
 }
