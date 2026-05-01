@@ -7,6 +7,11 @@
 #include <vector>
 #include <string>
 
+class Conf;
+
+void    server(Conf &conf);
+void    boot_server(Conf &conf);
+
 class Server {
 public:
     Server();
@@ -17,6 +22,7 @@ public:
     
     // Getter（後のselect/poll/kqueueで使用）
     int     getListenFd() const;
+
 
 private:
     int                 _listen_fd;    // ソケットディスクリプタ

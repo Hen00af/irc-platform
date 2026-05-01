@@ -1,5 +1,5 @@
 #include <string>
-#include "webserver.hpp"
+#include "conf.hpp"
 
 void parsing(int argc, char **argv, Conf &conf)
 {
@@ -7,6 +7,7 @@ void parsing(int argc, char **argv, Conf &conf)
 
     conf.read_file(argv[1]);
     conf.check_directive();
+    conf.init_file_pos();
     conf.stock_data();
-    conf.print_raw_data();
+    conf.check_data();
 }

@@ -1,9 +1,7 @@
-#include <csignal>
-#include "source/persing/webserver.hpp"
-#include "source/logging/logging.hpp"
-#include "source/server/server.hpp"
-
-Server serv;
+#include "../persing/conf.hpp"
+#include "../logging/logging.hpp"
+#include <iostream>
+#include <fstream>
 
 int main(int ac, char **av, char **envp) {
 
@@ -19,7 +17,7 @@ int main(int ac, char **av, char **envp) {
         return (1);
     }
 
-    server(conf);
+    server(config);
 
     return 0;
 }
