@@ -1,5 +1,5 @@
 #include "logging.hpp"
-#include "../persing/conf.hpp"
+#include "../persing/persing_conf.hpp"
 
 using std::cout;
 using std::cin;

@@ -1,5 +1,5 @@
-#ifndef Conf_HPP
-# define Conf_HPP
+#ifndef PersingConf_HPP
+# define PersingConf_HPP
 
 #include "../server/server.hpp"
 # include <iostream>
@@ -20,7 +20,7 @@
 
 class Conf;
 
-void parsing(int argc, char **argv, Conf &conf);
+void parsing_args(int argc, char **argv, Conf &conf);
 void validate_arguments(int argc, char **argv);
 
 /* conf_utils */
@@ -31,6 +31,7 @@ bool is_valid_listing_value(const std::string &value);
 
 
 struct LocationConfig;
+
 /*
 ** Parsed config structures
 */
@@ -45,6 +46,7 @@ struct ServerConfig {
     std::map<std::string, std::string> error_pages;
     std::vector<LocationConfig> locations;
 };
+
 /*
 ** Raw config structures
 */

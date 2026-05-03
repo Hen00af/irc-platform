@@ -9,7 +9,7 @@ int main(int ac, char **av, char **envp) {
     (void)envp;
 
     try {
-        parsing(ac, av, config);
+        parsing_args(ac, av, config);
         print_all_data(config);
     }
     catch (const std::exception& e) {
@@ -17,7 +17,6 @@ int main(int ac, char **av, char **envp) {
         return (1);
     }
 
-    server(config);
 
     return 0;
 }

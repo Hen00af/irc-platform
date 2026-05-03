@@ -1,7 +1,7 @@
 #include <string>
-#include "conf.hpp"
+#include "persing_conf.hpp"
 
-void parsing(int argc, char **argv, Conf &conf)
+void parsing_args(int argc, char **argv, Conf &conf)
 {
     validate_arguments(argc, argv);
 
