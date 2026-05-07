@@ -1,31 +1,54 @@
+
 #include "persing_request.hpp"
+#include <sstream>
+#include <iostream>
 
-RequestParser::Request() {
-
+Request::Request() {
 }
 
-RequestParser::~Request() {
-
+Request::~Request() {
 }
 
 
 
+static bool is_allowed_method(const std::string& method) {
+    return  method == "GET"
+        ||  method == "POST"
+        ||  method == "DELETE";
+}
 
-bool parse_request(const std::string& raw_request) {
-    std::string line;
-    ssize_t method_start_path;
-    ssize_t method_end_path;
-    ssize_t header_start_path:
-    ssize_t header_end_path;
-    ssize_t body_path;
-    ssize_t bpdy_path;
-    while(!getline(std::cin, line)) {
-        std::
-    }
+bool parse_request(const std::string& raw_request, HttpRequest& req) {
+    size_t request_line_end = raw_request.find("\r\n");
+    if (request_line_end == std::string::npos)
+        return false;
+    size_t header_end = raw_request.find("\r\n\r\n");
+    if (header_end == std::string::npos)
+        return false;
+
+    std::string request_line = raw_request.substr(0, request_line_end);
+
+    std::istringstream request_stream(request_line);
+    request_stream >> req.method >> req.request_target >> req.http_version;
+
+    return true;
 }
 
 int main() {
-    std::ifstream ifs = requst;
+    std::string raw_request =
+        "GET / HTTP/1.1\r\n"
+        "Host: localhost\r\n"
+        "\r\n";
 
+    HttpRequest req;
 
+    if (!parse_request(raw_request, req)) {
+        std::cerr << "parse error" << std::endl;
+        return 1;
+    }
+
+    std::cout << "method: " << req.method << std::endl;
+    std::cout << "target: " << req.request_target << std::endl;
+    std::cout << "version: " << req.http_version << std::endl;
+
+    return 0;
 }
