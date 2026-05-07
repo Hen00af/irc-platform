@@ -120,7 +120,7 @@ Server::~Server()
 
 void tcp(Conf &conf) {
     Server serv;
-    Request ;
+    Request req;
     serv.boot_server(conf);
-    serv.
+    req.parse_request();
 }

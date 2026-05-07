@@ -1,5 +1,5 @@
-#ifndef PERSING_REQUEST_HPP
-#define PERSING_REQUEST_HPP
+#ifndef REQUEST_HPP
+#define REQUEST_HPP
 
 struct HttpRequest {
     std::string method;          // "GET"
@@ -11,7 +11,7 @@ struct HttpRequest {
 
 };
 
-class RequestParser {
+class Request {
 public:
     RequestParser();
 
