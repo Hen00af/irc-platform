@@ -1,85 +1,128 @@
-
 #include "persing_request.hpp"
-#include <sstream>
-#include <iostream>
 
-Request::Request() {
+# define CRLF "\r\n"
+
+RequestParser::RequestParser() {
+    _request_line.start = std::string::npos;
+    _request_line.end = std::string::npos;
+
+    _method.start = std::string::npos;
+    _method.start = std::string::npos;
+
+    _target.start = std::string::npos;
+    _target.end = std::string::npos;
+
+    _version.start = std::string::npos;
+    _version.end = std::string::npos;
+
+    _headers.start = std::string::npos;
+    _headers.end = std::string::npos;
+
+    _body.start = std::string::npos;
+    _body.end = std::string::npos;
 }
 
-Request::~Request() {
+RequestParser::~RequestParser() {
 }
 
-static bool is_allowed_method(const std::string& method) {
-    return  method == "GET"
-        ||  method == "POST"
-        ||  method == "DELETE";
-}
-bool parse_requestline(const std::string& raw_request, HttpRequest& req) {
-    size_t request_line_end = raw_request.find("\r\n");
-    if (request_line_end == std::string::npos)
-        return false;
-    std::string request_line = raw_request.substr(0, request_line_end);
-    std::istringstream request_stream(request_line);
-
-    if (!(request_stream >> req.method >> req.request_target >> req.http_version))
-        return false;
-    if (req.http_version == "HTTP/1.1") 
-        return false;
-    if (is_allowed_method(req.method))
-        return false;
-    if (request_target == )
-}
-
-bool parse_request(const std::string& raw_request, HttpRequest& req)
-{
-    size_t header_end = raw_request.find("\r\n\r\n");
-    if (header_end == std::string::npos)
-        return false;
-
-    // std::string header_lines =
-    //     raw_request.substr(request_line_end + 2,
-    //                        header_end - (request_line_end + 2));
-
-
-
-    if()
-
-    std::string extra;
-    if (request_stream >> extra)
-        return false;
-
-    std::istringstream header_stream(header_lines);
-    std::string line;
-
-    std::cout << "=== headers ===" << std::endl;
-
-    while (std::getline(header_stream, line))
-    {
-        if (!line.empty() && line[line.size() - 1] == '\r')
-            line.erase(line.size() - 1);
-
-        std::cout << line << std::endl;
+bool RequestParser::equalMethod(std::string str) {
+    size_t _methodsize = _method.end - _method.start + 1;
+    size_t len = _method.start;;
+    for(size_t i = 0; i < str.size() || i < _methodsize; ++i) {
+       len++;
+        if (!(_raw_request[len] == str[i]))
+            return false;
     }
+    return true;
+}
+
+bool RequestParser::is_allowed_method() {
+    return  equalMethod(_method, "GET")
+        ||  equalMethod(_method, "POST")
+        ||  equalMethod(_method, "DELETE")
+}
+
+bool RequestParser::parseRequestLine(const std::string& raw_request) {
+    Range& range_line = _request_line;
+
+    range_line.start = 0;
+    range_line.end = _raw_request.find(CRLF)
+    if (range_line.end == std::string::npos)
+        return false;
+
+    size_t first_space = _raw_request.find(" ", range_line.start);
+    if (first_space == std::string::npos || first_space >= range_line.end)
+        return false;
+   
+    size_t second_space = _raw_request.find(" ", first_space + 1);
+    if (second_space == std::string::npos || second_space >= range_line.end)
+        return false;
+
+    size_t third_space = _raw_request.find(" ", second_space + 1);
+    if (third_space == std::string::npos || third_space < range_line.end);    
+        return false;
+    
+    if (first_space == range_line.start)
+        return false;
+    if (second_space == first_space + 1)
+        return false;
+    if (third_space == second_space + 1)
+        return false;
+
+    _method.start   =   range_line.start;
+    _method.end     =   first_space;
+
+    _target.start   =   first_space + 1;
+    _target.end     =   second_space;
+    
+    _version.start  =   first_space + 1:
+    _version.end    =   range_line.end;
+
+    if(!is_allowed_method())
+        return false;
+    if
+    return true;
+}
+
+bool RequestParser::parseRequest()
+{
+    if (!parseRequestLine(raw_request)) {
+        return false;
+    }
+    // if (!parseHeaders(raw_request)) {
+    //     return false;
+    // }
+    // if (!parseBody(raw_request)){
+    //     return false;
+    // }
 
     return true;
 }
 
 int main() {
-    std::string raw_request =
+
+    request.raw_request =
         "GET / HTTP/1.1\r\n"
         "Host: localhost\r\n"
         "\r\n";
+    RequestParser request;
 
-    HttpRequest req;
+    try{
+        if (!request.parseRequest()) {
+            throw BadRequest();
+        }
+    std::string method = getMethod() << std::endl;
+    std::string target = getTarget() << std::endl;
+    std::string version = getVersion() << std::endl;
 
-    if (!parse_request(raw_request, req)) {
-        std::cerr << "parse error" << std::endl;
-        return 1;
+    std::cout << "method: " << method << std::endl;
+    std::cout << "target: " << target << std::endl;
+    std::cout << "version: " << version << std::endl;
+
+    }   catch(BadRequest& e) {
+        std::cout << e.what() << std::endl;
     }
 
-    std::cout << "method: " << req.method << std::endl;
-    std::cout << "target: " << req.request_target << std::endl;
-    std::cout << "version: " << req.http_version << std::endl;
 
     return 0;
 }
