@@ -43,7 +43,7 @@ public:
 
 private:
     HttpRequest _request;
-
+    
     bool parseRequestLine(const std::string& line);
     bool parseHeaders(const std::string& header_part);
     void parseBody(const std::string& body_part);
