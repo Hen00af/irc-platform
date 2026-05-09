@@ -1,7 +1,7 @@
 #ifndef PersingConf_HPP
 # define PersingConf_HPP
 
-#include "../server/server.hpp"
+// #include "../server/server.hpp"  // server_multi_io.hppと衝突するため一時的にコメントアウト
 # include <iostream>
 # include <fstream>
 # include <vector>
