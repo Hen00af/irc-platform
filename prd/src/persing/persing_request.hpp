@@ -2,6 +2,7 @@
 #define REQUEST_HPP
 #include <cstddef>
 #include <exception>
+#include <map>
 #include <string>
 
 struct Range {
@@ -15,29 +16,36 @@ public:
     ~RequestParser();
 
     bool parseRequest(const std::string& raw_request);
-    bool is_allowed_method();
-    bool equalMethod();
+
+    std::string slice(const Range& range) const;
     std::string getMethod() const;
     std::string getTarget() const;
     std::string getVersion() const;
+    std::string getHeader(const std::string& key) const;
+
 private:
+    std::string _raw_request;
+
     Range _request_line;
     Range _method;
     Range _target;
     Range _version;
-    Range _headers;
+    Range _headers_range;
     Range _body;
-    std::string _raw_request;
 
-    bool parseRequestLine(const std::string& raw_request);
-    bool parseHeaders(const std::string& header_part);
-    bool parseBody(const std::string& body_part);
+    std::map<std::string, Range> _headers;
+
+    bool parseRequestLine();
+    bool parseHeaders();
+    bool parseBody();
+    bool equalsRange(const Range& range, const std::string& expected) const;
+    bool isAllowedMethod() const;
 };
+
 
 /*
 ** Exceptions
 */
-
 class BadRequest : public std::exception {public:const char* what() const throw(){
         return "400 Bad Request";
     }};
@@ -45,4 +53,4 @@ class VersionNotSupported : public std::exception {public:const char* what() con
         return "505 HTTP Version Not Supported";
     }};
 
-# endif // PERSING_REQUEST_HPP
+#endif // REQUEST_HPP
