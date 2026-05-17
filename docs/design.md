@@ -18,7 +18,7 @@
 ```mermaid
 flowchart TD
     Start([webserv 起動]) --> ParseConf[Conf::read_file<br/>conf/nginx.conf をパース]
-    ParseConf --> Bind[listen / bind<br/>poll 初期化<br/>※将来 kqueue]
+    ParseConf --> Bind[listen / bind<br/>poll 初期化]
     Bind --> Loop{{poll イベント待ち}}
 
     Loop -->|listen_fd POLLIN| Accept[accept で client_fd 取得<br/>Connection を生成<br/>POLLIN 登録]
@@ -57,11 +57,16 @@ flowchart TD
     WriteDone -->|完了| Close[close client_fd<br/>Connection 破棄]
     Close --> Loop
 
-    classDef planned fill:#fff4e6,stroke:#ff9933,stroke-dasharray: 5 5
+    classDef default fill:#e8eaf6,stroke:#3949ab,color:#1a237e
+    classDef decision fill:#fff9c4,stroke:#f57f17,color:#e65100
+    classDef planned fill:#ffe0b2,stroke:#e65100,color:#bf360c,stroke-dasharray: 5 5
+    classDef loop fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
     class Cgi,Redir,MakeErr1,MakeErr2,MakeErr3,Build,Static planned
+    class Done,ParseOK,Branch,WriteDone decision
+    class Loop loop
 ```
 
-> 多重 I/O は現状 `poll()` 実装。subject 要求の `kqueue` への移行は別タスク。
+> 多重 I/O は `poll()` で実装。subject は特定の方式（poll / select / kqueue / epoll 等）を強制しないので、当面 poll を維持する。
 
 ### 状態遷移として読むと
 
@@ -219,39 +224,64 @@ classDiagram
     }
   }
 
-  Conf "1" *-- "1..*" ServerConfig : owns
-  ServerConfig "1" *-- "0..*" LocationConfig : owns
-  RequestParser "1" *-- "0..*" Range : holds
+  Conf "1" *-- "1..*" ServerConfig : 所有
+  ServerConfig "1" *-- "0..*" LocationConfig : 所有
+  RequestParser "1" *-- "0..*" Range : 保持
 
-  Server "1" *-- "0..*" Connection : per client
-  Server ..> Conf : reads
-  Connection *-- ClientState : has io buffers
-  Connection *-- RequestParser : has parser
-  Connection o-- RouteResult : has decision
-  Connection o-- Response : has response
-  Connection o-- Request : (planned) has parsed
-  Connection --> ConnState : tracks state
+  Server "1" *-- "0..*" Connection : 接続ごと
+  Server ..> Conf : 参照
+  Connection *-- ClientState : I/O buffer 保持
+  Connection *-- RequestParser : parser 保持
+  Connection o-- RouteResult : 判定結果保持
+  Connection o-- Response : response 保持
+  Connection o-- Request : (planned) パース結果保持
+  Connection --> ConnState : 状態管理
 
-  RequestParser ..> Request : (planned) produces
+  RequestParser ..> Request : (planned) 生成
 
-  RouteResult --> ServerConfig : points to
-  RouteResult --> LocationConfig : points to
-  rooting_h ..> RequestParser : reads
-  rooting_h ..> ServerConfig : reads
-  rooting_h ..> RouteResult : creates
+  RouteResult --> ServerConfig : 参照
+  RouteResult --> LocationConfig : 参照
+  rooting_h ..> RequestParser : 参照
+  rooting_h ..> ServerConfig : 参照
+  rooting_h ..> RouteResult : 生成
 
-  StaticHandler ..> RouteResult : reads
-  StaticHandler ..> Response : produces
-  CGIHandler ..> RouteResult : reads
-  CGIHandler ..> Request : reads
-  CGIHandler ..> Response : produces
-  ResponseBuilder ..> Response : produces
-  ResponseBuilder ..> HttpStatus : reads
+  StaticHandler ..> RouteResult : 参照
+  StaticHandler ..> Response : 生成
+  CGIHandler ..> RouteResult : 参照
+  CGIHandler ..> Request : 参照
+  CGIHandler ..> Response : 生成
+  ResponseBuilder ..> Response : 生成
+  ResponseBuilder ..> HttpStatus : 参照
 
   note for rooting_h "free 関数群（class ではない）。<br/>状態を持たないので header 単位でまとめている"
   note for Server "現状コードでは server.hpp / server_multi_io.hpp / io-server.cpp に<br/>**同名 Server クラスの重複定義**あり。図は統合後の目標形"
   note for Request "現状は persing/RequestParser が文字列ベースで保持。<br/>http/request.hpp に値クラスとして移管予定"
+
+  style Conf fill:#bbdefb,stroke:#1565c0,color:#0d47a1
+  style ServerConfig fill:#bbdefb,stroke:#1565c0,color:#0d47a1
+  style LocationConfig fill:#bbdefb,stroke:#1565c0,color:#0d47a1
+  style RequestParser fill:#bbdefb,stroke:#1565c0,color:#0d47a1
+  style Range fill:#bbdefb,stroke:#1565c0,color:#0d47a1
+
+  style Request fill:#ffe0b2,stroke:#e65100,color:#bf360c
+  style Response fill:#ffe0b2,stroke:#e65100,color:#bf360c
+  style HttpStatus fill:#ffe0b2,stroke:#e65100,color:#bf360c
+
+  style RouteStatus fill:#e1bee7,stroke:#6a1b9a,color:#4a148c
+  style RouteResult fill:#e1bee7,stroke:#6a1b9a,color:#4a148c
+  style rooting_h fill:#e1bee7,stroke:#6a1b9a,color:#4a148c
+
+  style Server fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
+  style ClientState fill:#c8e6c9,stroke:#2e7d32,color:#1b5e20
+
+  style Connection fill:#ffe0b2,stroke:#e65100,color:#bf360c
+  style ConnState fill:#ffe0b2,stroke:#e65100,color:#bf360c
+  style StaticHandler fill:#ffe0b2,stroke:#e65100,color:#bf360c
+  style CGIHandler fill:#ffe0b2,stroke:#e65100,color:#bf360c
+  style ResponseBuilder fill:#ffe0b2,stroke:#e65100,color:#bf360c
 ```
+
+> **色分け**: 青=persing（現状実装）／緑=server（現状実装）／紫=rooting（header 設計済み）／オレンジ=未実装 (`<<planned>>` 含む http も該当)
 
 ---
 
@@ -260,7 +290,7 @@ classDiagram
 | 判断 | 内容 |
 |---|---|
 | **`Connection` を導入する** (planned) | 今の `Server::ClientState` は read/write buffer のみ。これに `RequestParser` / `RouteResult` / `Response` / `ConnState` を集約して **「1 接続の生涯」を 1 つの構造で表現** |
-| **`ConnState` enum** | 各接続が「次に何を待つか」を持つ必要があり、READING → ROUTING → HANDLING → WRITING の状態機械にする（kqueue 移行後も同じ思想） |
+| **`ConnState` enum** | 各接続が「次に何を待つか」を持つ必要があり、READING → ROUTING → HANDLING → WRITING の状態機械にする（多重 I/O の方式が poll でも他でも同じ思想） |
 | **`rooting_h` は class でなく header 単位の関数群** | 状態を持たないので class にする意味がない。図上は `<<header>>` ステレオタイプでまとめる（実体は class ではない） |
 | **`RouteResult` は `ServerConfig*` / `LocationConfig*` を持つ（値ではない）** | Conf 内の vector が真の所有者。routing は「指紋」を返すだけで複製しない（コピー回避 + 設定が単一の真実の源泉） |
 | **handler は class、`ResponseBuilder` も class** | 状態は持たないが、責務が違うものは class でまとめて検索性を上げる（読者のため） |
@@ -278,7 +308,7 @@ classDiagram
 | 図上 | 現実 |
 |---|---|
 | `namespace server` に `Server` 1 つ | `server.hpp` と `server_multi_io.hpp` で **同名 `Server` クラスが 2 重定義**。さらに `server.cpp` / `io-server.cpp` / `server_multi_io.cpp` の 3 ファイルが Server を実装（シンボル重複）|
-| `poll イベント待ち` ノード | 実装は OK（poll ベース）。ただし subject は `kqueue` 要求 |
+| `poll イベント待ち` ノード | 実装と一致（poll ベース）。subject は多重 I/O 方式を強制しないため変更不要 |
 | `Server` のメンバ `_listen_fd` / `_server_fd` 等 | 一致 |
 | Server の Connection 保持 | **未実装**。現コードでは `boot_server` 内の local 変数 `std::vector<pollfd>` + `std::map<int, ClientState>` |
 | `RequestParser` から `Request` 値クラス生成 | **未実装**。現状は `RequestParser` 内に文字列ベースで保持、`getMethod()` 等で都度返す |
@@ -305,7 +335,6 @@ classDiagram
 5. **keep-alive / chunked transfer** — subject 範囲だが本図では明示せず。CLOSING ではなく READING に戻る枝が必要になる可能性
 6. **`error_pages` の解決層** — 図では ResponseBuilder が担うが、`RouteResult` が候補パスを渡す案もある
 7. **`RequestParser` を残すか、`http/Request` に統合するか** — 図では 2 つに分離（パーサと値クラス）。実装時に統合判断
-8. **`poll` → `kqueue` 移行**のタイミング — 機能完成前か後か
 
 ---
 
