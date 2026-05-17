@@ -25,18 +25,18 @@ flowchart TD
     Accept --> Loop
 
     Loop -->|client_fd POLLIN| Read[recv で read_buffer に追記]
-    Read --> Done{リクエスト<br/>完成?}
-    Done -->|まだ| Loop
+    Read --> Done{request<br/>complete?}
+    Done -->|no| Loop
 
-    Done -->|完成| Parse[RequestParser::parseRequest<br/>method / target / Host 抽出]
-    Parse --> ParseOK{パース成功?}
+    Done -->|yes| Parse[RequestParser::parseRequest<br/>method / target / Host 抽出]
+    Parse --> ParseOK{parse<br/>ok?}
     ParseOK -->|400/505| MakeErr1[error_page から body 構築]
-    ParseOK -->|OK| Route[route servers, req]
+    ParseOK -->|ok| Route[route servers, req]
 
     Route --> Branch{RouteStatus}
 
-    Branch -->|ROUTE_OK + 静的| Static[StaticHandler<br/>fs_path を open / 読み込み]
-    Branch -->|ROUTE_OK + CGI| Cgi[CGIHandler<br/>fork + exec + pipe]
+    Branch -->|ROUTE_OK static| Static[StaticHandler<br/>fs_path を open / 読み込み]
+    Branch -->|ROUTE_OK cgi| Cgi[CGIHandler<br/>fork + exec + pipe]
     Branch -->|ROUTE_REDIRECT| Redir[301/302 レスポンス組み立て]
     Branch -->|ROUTE_NOT_FOUND| MakeErr2[404 error_page]
     Branch -->|ROUTE_METHOD_NOT_ALLOWED| MakeErr3[405 error_page]
@@ -52,9 +52,9 @@ flowchart TD
     SwitchWrite --> Loop
 
     Loop -->|client_fd POLLOUT| Write[send でレスポンス送信]
-    Write --> WriteDone{全部書けた?}
-    WriteDone -->|まだ| Loop
-    WriteDone -->|完了| Close[close client_fd<br/>Connection 破棄]
+    Write --> WriteDone{all<br/>written?}
+    WriteDone -->|no| Loop
+    WriteDone -->|yes| Close[close client_fd<br/>Connection 破棄]
     Close --> Loop
 
     classDef default fill:#e8eaf6,stroke:#3949ab,color:#1a237e
@@ -224,34 +224,34 @@ classDiagram
     }
   }
 
-  Conf "1" *-- "1..*" ServerConfig : 所有
-  ServerConfig "1" *-- "0..*" LocationConfig : 所有
-  RequestParser "1" *-- "0..*" Range : 保持
+  Conf "1" *-- "1..*" ServerConfig : owns
+  ServerConfig "1" *-- "0..*" LocationConfig : owns
+  RequestParser "1" *-- "0..*" Range : holds
 
-  Server "1" *-- "0..*" Connection : 接続ごと
-  Server ..> Conf : 参照
-  Connection *-- ClientState : I/O buffer 保持
-  Connection *-- RequestParser : parser 保持
-  Connection o-- RouteResult : 判定結果保持
-  Connection o-- Response : response 保持
-  Connection o-- Request : (planned) パース結果保持
-  Connection --> ConnState : 状態管理
+  Server "1" *-- "0..*" Connection : per client
+  Server ..> Conf : reads
+  Connection *-- ClientState : has io buffers
+  Connection *-- RequestParser : has parser
+  Connection o-- RouteResult : has decision
+  Connection o-- Response : has response
+  Connection o-- Request : (planned) has parsed
+  Connection --> ConnState : tracks state
 
-  RequestParser ..> Request : (planned) 生成
+  RequestParser ..> Request : (planned) produces
 
-  RouteResult --> ServerConfig : 参照
-  RouteResult --> LocationConfig : 参照
-  rooting_h ..> RequestParser : 参照
-  rooting_h ..> ServerConfig : 参照
-  rooting_h ..> RouteResult : 生成
+  RouteResult --> ServerConfig : points to
+  RouteResult --> LocationConfig : points to
+  rooting_h ..> RequestParser : reads
+  rooting_h ..> ServerConfig : reads
+  rooting_h ..> RouteResult : creates
 
-  StaticHandler ..> RouteResult : 参照
-  StaticHandler ..> Response : 生成
-  CGIHandler ..> RouteResult : 参照
-  CGIHandler ..> Request : 参照
-  CGIHandler ..> Response : 生成
-  ResponseBuilder ..> Response : 生成
-  ResponseBuilder ..> HttpStatus : 参照
+  StaticHandler ..> RouteResult : reads
+  StaticHandler ..> Response : produces
+  CGIHandler ..> RouteResult : reads
+  CGIHandler ..> Request : reads
+  CGIHandler ..> Response : produces
+  ResponseBuilder ..> Response : produces
+  ResponseBuilder ..> HttpStatus : reads
 
   note for rooting_h "free 関数群（class ではない）。<br/>状態を持たないので header 単位でまとめている"
   note for Server "現状コードでは server.hpp / server_multi_io.hpp / io-server.cpp に<br/>**同名 Server クラスの重複定義**あり。図は統合後の目標形"
