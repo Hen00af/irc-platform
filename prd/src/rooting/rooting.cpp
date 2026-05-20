@@ -7,6 +7,9 @@ struct range{
 };
 
 HttpResponse handle_request(const HttpRequest& req, const Conf& cond) //
+{
+    
+}
 
 
 int main() {
