@@ -39,7 +39,15 @@ bool setBody() {
 */
 
 std::string serializeStatusLine(const HttpResponse& res) {
+    std::string line;
 
+    line.append("HTTP/1.1 ");
+    line.append(toString(res.status_code));
+    line.append(" ");
+    line.append(res.reason_phrase);
+    line.append(CRLF());
+
+    return line;
 }
 
 /*
@@ -50,6 +58,19 @@ std::string serializeStatusLine(const HttpResponse& res) {
     <Setting request
 */
 std::string serializeHeaders(const HttpResponse& res) {
+    std::string headers;
+
+    std::map<std::string, std::string>::const_iterator it;
+
+    for (it = res.headers.begin(); it != res.headers.end(); ++it)
+    {
+        headers.append(it->first);
+        headers.append(": ");
+        headers.append(it->second);
+        headers.append(CRLF());
+    }
+
+    return headers;
 }
 /*
     Setting request>
@@ -59,31 +80,42 @@ std::string serializeHeaders(const HttpResponse& res) {
     <Setting body
 */
 std::string serializeBody(const HttpResponse& res) {
+    return res.body;
 }
 /*
     Setting body>
 */
 
-std::string CRLF() {
-    return "\r\n";
-}
-
-
 std::string serialize(const HttpResponse& res) {
     std::string response;
 
     response.append(serializeStatusLine(res));
+
     response.append(serializeHeaders(res));
+
     response.append(CRLF());
+
     response.append(serializeBody(res));
 
     return response;
+}
+/*
+    <utils
+*/
+std::string numberToString(size_t n)
+{
+    std::stringstream ss;
+    ss << n;
+    return ss.str();
 }
 
 std::string CRLF() {
     return "\r\n";
 }
 
+/*
+    utils>
+*/
 HttpResponse buildResponse() {
     HttpResponse res;
 
