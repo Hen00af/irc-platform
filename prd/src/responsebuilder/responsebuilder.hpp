@@ -1,13 +1,9 @@
-#ifndef RESPONSEBUILDER_CPP
-#define RESPONSEBUILDER_CPP
+#ifndef RESPONSE_BUILDER_HPP
+# define RESPONSE_BUILDER_HPP
 
-struct HttpResponse {
-    int status_code;
-    std::string reason_phrase;
+# include "HttpResponse.hpp"
+# include "../persing/persing_conf.hpp"
 
-    std::map<std::string, std::string> headers;
+HttpResponse buildResponse(const Conf& config);
 
-    std::string body;
-};
-
-#endif // RESPONSEBUILDER_CPP
+#endif
