@@ -1,7 +1,7 @@
 #ifndef PersingConf_HPP
 # define PersingConf_HPP
 
-// #include "../server/server.hpp"  // server_multi_io.hppと衝突するため一時的にコメントアウト
+#include "../server/server.hpp"
 # include <iostream>
 # include <fstream>
 # include <vector>
@@ -93,8 +93,6 @@ private:
 ** Exceptions
 */
 
-# ifndef EXCEPTION public std::exception
-# ifndef WHAT const char * what () const throw()
 # define EXCEPTION public std::exception
 # define WHAT const char * what () const throw()
 
@@ -113,8 +111,6 @@ class IndexLoc    : EXCEPTION { WHAT { return "Error: Missing index in location"
 class ListingErr  : EXCEPTION { WHAT { return "Error: Dir_listing must be on or off"; } };
 class SizeErr     : EXCEPTION { WHAT { return "Error: Client size"; } };
 
-# endif WHAT const char * what () const throw()
-# endif EXCEPTION public std::exception
 /*
 *** Exceptions fot test
 */
