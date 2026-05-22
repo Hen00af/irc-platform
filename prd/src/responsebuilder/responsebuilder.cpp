@@ -29,6 +29,20 @@ HttpResponse buildErrorResponse(int status_code)
         res.reason_phrase = "Not Found";
     else if (status_code == 405)
         res.reason_phrase = "Method Not Allowed";
+    else if (status_code == 406)
+        res.reason_phrase = "Not Acceptable";
+    else if (status_code == 407)
+        res.reason_phrase == "Proxy Authentication Required";
+    else if (status_code == 408)
+        res.reason_phrase == "request Timeout";
+    else if (status_code == 409)
+        res.reason_phrase == "Conflict";
+    else if (status_code == 410)
+        res.reason_phrase == "Gone";
+    else if (status_code == 411)
+        res.reason_phrase == "Length Required";
+    else if (status_code == 412)
+        res.reason_phase == "Precondition Failed"
     else if (status_code == 501)
         res.reason_phrase = "Not Implemented";
     else
