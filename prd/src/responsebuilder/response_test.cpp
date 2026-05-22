@@ -140,14 +140,6 @@ static void testBuildAndSerialize()
     assertEqual(actual, expected, "buildResponse + serializeResponse");
 }
 
-void gTestSerializeResponse() {
-    req.method = "GET"
-    req. body = ""
-    req.target = "/"
-
-    
-}
-
 int main()
 {
     testSerializeSimpleResponse();
