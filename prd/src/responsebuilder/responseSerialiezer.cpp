@@ -15,13 +15,6 @@ static std::string crlf()
     return "\r\n";
 }
 
-static std::string toString(size_t n)
-{
-    std::stringstream ss;
-    ss << n;
-    return ss.str();
-}
-
 static std::string toString(int n)
 {
     std::stringstream ss;

@@ -70,9 +70,17 @@ static void testSerializeEmptyBody()
 
 static void testBuildResponse()
 {
-    Conf config;
+    HttpRequest req;
+    ResponseContext ctx;
 
-    HttpResponse res = buildResponse(config);
+    req.method = "GET";
+    req.target = "/";
+    req.body = "";
+
+    ctx.config = NULL;
+    ctx.file_path = "";
+
+    HttpResponse res = buildResponse(req, ctx);
 
     if (res.status_code != 200)
     {
@@ -86,7 +94,7 @@ static void testBuildResponse()
         std::exit(1);
     }
 
-    if (res.body != "<h1>Hello</h1>")
+    if (res.body != "<h1>Hello from GET</h1>")
     {
         std::cout << "[KO] buildResponse body" << std::endl;
         std::exit(1);
@@ -98,7 +106,7 @@ static void testBuildResponse()
         std::exit(1);
     }
 
-    if (res.headers["Content-Length"] != "14")
+    if (res.headers["Content-Length"] != "23")
     {
         std::cout << "[KO] buildResponse Content-Length" << std::endl;
         std::exit(1);
@@ -109,19 +117,35 @@ static void testBuildResponse()
 
 static void testBuildAndSerialize()
 {
-    Conf config;
+    HttpRequest req;
+    ResponseContext ctx;
 
-    HttpResponse res = buildResponse(config);
+    req.method = "GET";
+    req.target = "/";
+    req.body = "";
+
+    ctx.config = NULL;
+    ctx.file_path = "";
+
+    HttpResponse res = buildResponse(req, ctx);
     std::string actual = serializeResponse(res);
 
     std::string expected;
     expected += "HTTP/1.1 200 OK\r\n";
-    expected += "Content-Length: 14\r\n";
+    expected += "Content-Length: 23\r\n";
     expected += "Content-Type: text/html\r\n";
     expected += "\r\n";
-    expected += "<h1>Hello</h1>";
+    expected += "<h1>Hello from GET</h1>";
 
     assertEqual(actual, expected, "buildResponse + serializeResponse");
+}
+
+void gTestSerializeResponse() {
+    req.method = "GET"
+    req. body = ""
+    req.target = "/"
+
+    
 }
 
 int main()
@@ -130,6 +154,7 @@ int main()
     testSerializeEmptyBody();
     testBuildResponse();
     testBuildAndSerialize();
+
 
     std::cout << "All tests passed." << std::endl;
     return 0;
