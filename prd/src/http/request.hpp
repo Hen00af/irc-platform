@@ -1,7 +1,7 @@
-# ifndef REQUEST
-# define REQUEST
+#ifndef REQUEST
+#define REQUEST
 
-# include <string>
+#include <string>
 
 /*
     HTTP　key
@@ -12,7 +12,7 @@
     Accept
     User-Agent
     Cookie
-    
+
 */
 
 /*
@@ -21,7 +21,7 @@
     などのnginxが使用している最適化を積極的に取り入れたい。
 */
 
-# define HTTP_VERSION HTTP 1.1
+#define HTTP_VERSION HTTP 1.1
 
 /*
     ==================================================================================================================================================================================================================
@@ -47,7 +47,6 @@
 //     0xffffffff, /* 1111 1111 1111 1111  1111 1111 1111 1111 */
 //     0xffffffff  /* 1111 1111 1111 1111  1111 1111 1111 1111 */
 // };
-
 
 // #if (NGX_HAVE_LITTLE_ENDIAN && NGX_HAVE_NONALIGNED)
 
@@ -91,5 +90,4 @@ struct HttpRequest
     std::string body;
 };
 
-
-#endif //REQUEST
+#endif  // REQUEST

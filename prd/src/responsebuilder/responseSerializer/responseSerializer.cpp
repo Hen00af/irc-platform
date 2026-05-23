@@ -54,5 +54,3 @@ std::string createResponse(const HttpResponse& res)
 
     return response;
 }
-
-

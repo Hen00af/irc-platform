@@ -1,5 +1,3 @@
 #include "method.hpp"
 
-HttpResponse handlePost(const std::string path) {
-    
-}
+HttpResponse handlePost(const std::string path) {}

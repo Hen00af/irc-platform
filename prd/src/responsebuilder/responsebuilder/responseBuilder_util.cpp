@@ -2,8 +2,9 @@
 #include <unistd.h>
 #include <string>
 
-static std::string httpDate(time_t t) {
-    char    buf[128];
+static std::string httpDate(time_t t)
+{
+    char buf[128];
     struct tm tm;
 
     gmtime_r(&t, &tm);
@@ -11,15 +12,15 @@ static std::string httpDate(time_t t) {
     return std::string(buf);
 }
 
-static std::string httpDate() {
+static std::string httpDate()
+{
     return httpDate(time(NULL));
 }
 
-
 bool readFile(const std::string& path, std::string& body)
 {
-    int     fd;
-    char    buffer[4096];
+    int fd;
+    char buffer[4096];
     ssize_t bytes_read;
 
     fd = open(path.c_str(), O_RDONLY);

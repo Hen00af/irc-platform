@@ -10,7 +10,8 @@
 //     std::string body;
 // };
 
-void initHttpResponse(HttpResponse& res) {
+void initHttpResponse(HttpResponse& res)
+{
     res.status_code = 200;
     res.reason_phrase = "Nando";
     res.headers["Content-Length"] = "100";
@@ -20,7 +21,7 @@ void initHttpResponse(HttpResponse& res) {
 }
 
 /*
-*/
+ */
 
 #include "../../server/server.hpp"
 
@@ -103,51 +104,51 @@ void serve_once(Conf& conf)
 
     std::cout << "mock_server: listening on port " << port << std::endl;
 
-    while(1) {
-
-    int client_fd = accept(listen_fd, NULL, NULL);
-    if (client_fd == -1)
+    while (1)
     {
-        std::cerr << "mock_server: accept: " << std::strerror(errno) << std::endl;
-        close(listen_fd);
-        return;
-    }
+        int client_fd = accept(listen_fd, NULL, NULL);
+        if (client_fd == -1)
+        {
+            std::cerr << "mock_server: accept: " << std::strerror(errno) << std::endl;
+            close(listen_fd);
+            return;
+        }
 
-    char buf[MOCK_BUF];
-    std::memset(buf, 0, sizeof(buf));
-    ssize_t n = recv(client_fd, buf, sizeof(buf) - 1, 0);
-    if (n <= 0)
-    {
-        std::cerr << "mock_server: recv: " << std::strerror(errno) << std::endl;
+        char buf[MOCK_BUF];
+        std::memset(buf, 0, sizeof(buf));
+        ssize_t n = recv(client_fd, buf, sizeof(buf) - 1, 0);
+        if (n <= 0)
+        {
+            std::cerr << "mock_server: recv: " << std::strerror(errno) << std::endl;
+            close(client_fd);
+            close(listen_fd);
+            return;
+        }
+
+        HttpRequest req = parseRequestLine(std::string(buf, n));
+
+        ResponseContext ctx;
+        ctx.config = &conf;
+        ctx.file_path = "";
+
+        // HttpResponse res = buildResponse(req, ctx);
+        HttpResponse res;
+        initHttpResponse(res);
+        std::string out = createResponse(res);
+
+        send(client_fd, out.c_str(), out.size(), 0);
+
         close(client_fd);
-        close(listen_fd);
-        return;
     }
-
-    HttpRequest req = parseRequestLine(std::string(buf, n));
-
-    ResponseContext ctx;
-    ctx.config = &conf;
-    ctx.file_path = "";
-
-    // HttpResponse res = buildResponse(req, ctx);
-    HttpResponse res;
-    initHttpResponse(res);
-    std::string out = createResponse(res);
-
-    send(client_fd, out.c_str(), out.size(), 0);
-
-    close(client_fd);
-}
     close(listen_fd);
 }
 
-
 /*
-*/
+ */
 
 #include <iostream>
-int main() {
+int main()
+{
     HttpResponse res;
     std::string str;
     Conf conf = initConf();
@@ -156,8 +157,6 @@ int main() {
     str = createResponse(res);
 
     serve_once(conf);
-
-
 
     return 0;
 }
