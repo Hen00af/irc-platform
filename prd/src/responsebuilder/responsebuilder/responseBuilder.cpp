@@ -149,16 +149,6 @@ static std::string getContentType(const std::string& path)
     create headers
 */
 
-
-// int main() {
-//     std::string str;
-//     time_t t;
-
-//     str = httpDate();
-//     std::cout << str << std::endl;
-//     return 0;
-// }
-
 static void setBasicHeaders(HttpResponse& res)
 {
     time_t t;
@@ -170,28 +160,20 @@ static void setBasicHeaders(HttpResponse& res)
 }
 
 // static
-    int main() {
-        HttpResponse res;
+int main() {
+    HttpResponse res;
 
-        setBasicHeaders(res);
-        std::map<std::string, std::string>::const_iterator it;
-        for (it = res.headers.begin(); it != res.headers.end();) {
-            std::cout << "HttpResponse key" << std::endl;
-            std::cout << it ->first << std::endl;
-            std::cout << "HttpResponse value" << std::endl;
-            std::cout << it -> second << std::endl;
-        }
-        return 0;
+    setBasicHeaders(res);
+    std::map<std::string, std::string>::const_iterator it;
+    for (it = res.headers.begin(); it != res.headers.end();) {
+        std::cout << "HttpResponse key" << std::endl;
+        std::cout << it ->first << std::endl;
+        std::cout << "HttpResponse value" << std::endl;
+        std::cout << it -> second << std::endl;
+    }
+    return 0;
 }
 
-static std::string getLastModified(const std::string& path) {
-    struct stat st;
-
-    if (stat(path.c_str(), &st) != 0)
-        return "";
-
-    return httpDate(st.st_mtime);
-}
 
 HttpResponse buildErrorResponse(int status_code)
 {
