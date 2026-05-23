@@ -14,4 +14,4 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run conf_test.sh
-        run: ./prd/test/conf_test.sh
+        run: bash ./prd/test/conf_test.sh
