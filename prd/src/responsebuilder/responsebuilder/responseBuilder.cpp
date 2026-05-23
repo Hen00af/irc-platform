@@ -35,7 +35,7 @@ static std::map<int, std::string> createReasonPhraseMap()
     m[303] = "See Other";
     m[304] = "Not Modified";
     m[305] = "Use Proxy";
-    m[306] = "unused";         
+    m[306] = "unused";
     m[307] = "Temporary Redirect";
     m[308] = "Permanent Redirect";
 
@@ -111,14 +111,15 @@ static std::string toString(int n)
     return ss.str();
 }
 
-static bool endsWith(const std::string& ref, const std::string& obj){
-    if (ref.length() >= obj.length())   {
-        return (0 == ref.compare (ref.length() - obj.length(), obj.length(), obj));
+static bool endsWith(const std::string& ref, const std::string& obj)
+{
+    if (ref.length() >= obj.length())
+    {
+        return (0 == ref.compare(ref.length() - obj.length(), obj.length(), obj));
     }
     else
         return false;
 }
-
 
 static std::string getContentType(const std::string& path)
 {

@@ -9,4 +9,4 @@
 #include <map>
 #include <string>
 
-#endif //METHOD
+#endif  // METHOD

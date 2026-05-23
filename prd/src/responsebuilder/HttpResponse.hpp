@@ -1,8 +1,8 @@
 #ifndef HTTP_RESPONSE_HPP
-# define HTTP_RESPONSE_HPP
+#define HTTP_RESPONSE_HPP
 
-# include <string>
-# include <map>
+#include <string>
+#include <map>
 
 struct HttpResponse
 {

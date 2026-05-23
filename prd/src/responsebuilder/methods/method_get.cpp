@@ -3,7 +3,7 @@
 bool readFile(const std::string& path, std::string& body)
 {
     std::ifstream file(path.c_str());
-    std::string   line;
+    std::string line;
 
     if (!file.is_open())
         return false;
@@ -24,7 +24,7 @@ HttpResponse handleGetFile(const std::string path)
     HttpResponse res;
     std::string body;
 
-    if(!readFile(path, body)) 
+    if (!readFile(path, body))
         return buildErrorResponse(403);
 
     res.status_code = 200;
@@ -36,7 +36,8 @@ HttpResponse handleGetFile(const std::string path)
     return res;
 }
 
-HttpResponse handleGet(const HttpRequest& req, const ResponseContext& ctx) {
+HttpResponse handleGet(const HttpRequest& req, const ResponseContext& ctx)
+{
     HttpResponse res;
     res = handleGetFile(ctx.file_path);
 

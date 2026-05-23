@@ -6,8 +6,7 @@
 #include <string>
 #include <cstdlib>
 
-static void assertEqual(const std::string& actual,
-                        const std::string& expected,
+static void assertEqual(const std::string& actual, const std::string& expected,
                         const std::string& test_name)
 {
     if (actual == expected)
@@ -146,7 +145,6 @@ int main()
     testSerializeEmptyBody();
     testBuildResponse();
     testBuildAndSerialize();
-
 
     std::cout << "All tests passed." << std::endl;
     return 0;
