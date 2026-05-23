@@ -1,15 +1,6 @@
 #include "responseSerializer.hpp"
 #include <sstream>
 
-/*
-    HTTP/1.1 200 OK\r\n
-    Header: value\r\n
-    \r\n
-    body
-
-    この形にする。
-*/
-
 static std::string crlf()
 {
     return "\r\n";
@@ -35,6 +26,7 @@ static std::string serializeStatusLine(const HttpResponse& res)
     return line;
 }
 
+#include <iostream>
 static std::string serializeHeaders(const HttpResponse& res)
 {
     std::string headers;
@@ -46,11 +38,12 @@ static std::string serializeHeaders(const HttpResponse& res)
         headers.append(": ");
         headers.append(it->second);
         headers.append(crlf());
+        std::cout << "first:" << it->first << " second:" << it->second << std::endl;
     }
     return headers;
 }
 
-std::string serializeResponse(const HttpResponse& res)
+std::string createResponse(const HttpResponse& res)
 {
     std::string response;
 

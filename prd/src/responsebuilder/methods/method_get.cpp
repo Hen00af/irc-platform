@@ -1,4 +1,23 @@
+#include "method.hpp"
 
+bool readFile(const std::string& path, std::string& body)
+{
+    std::ifstream file(path.c_str());
+    std::string   line;
+
+    if (!file.is_open())
+        return false;
+
+    body.clear();
+
+    while (std::getline(file, line))
+    {
+        body += line;
+        body += "\n";
+    }
+
+    return true;
+}
 
 HttpResponse handleGetFile(const std::string path)
 {

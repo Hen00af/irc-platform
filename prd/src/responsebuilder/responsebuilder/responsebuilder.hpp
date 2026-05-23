@@ -1,9 +1,9 @@
 #ifndef RESPONSE_BUILDER_HPP
 # define RESPONSE_BUILDER_HPP
 
-# include "HttpResponse.hpp"
-# include "../http/request.hpp"
-# include "../persing/persing_conf.hpp"
+# include "../HttpResponse.hpp"
+# include "../../http/request.hpp"
+# include "../../persing/persing_conf.hpp"
 # include <string>
 
 struct ResponseContext

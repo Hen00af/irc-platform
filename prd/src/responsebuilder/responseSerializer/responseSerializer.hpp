@@ -1,9 +1,10 @@
 #ifndef RESPONSE_SERIALIZER_HPP
 # define RESPONSE_SERIALIZER_HPP
 
-# include "HttpResponse.hpp"
+# include "../HttpResponse.hpp"
 # include <string>
+// #include <map>
 
-std::string serializeResponse(const HttpResponse& res);
+std::string createResponse(const HttpResponse& res);
 
 #endif

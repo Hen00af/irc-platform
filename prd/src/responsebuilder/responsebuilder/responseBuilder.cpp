@@ -97,10 +97,6 @@ static const std::string& getReasonPhrase(int status_code)
     return it->second;
 }
 
-/*
-    <utils  
-*/
-
 static std::string toString(size_t n)
 {
     std::stringstream ss;
@@ -123,9 +119,6 @@ static bool endsWith(const std::string& ref, const std::string& obj){
         return false;
 }
 
-/*
-    utils>
-*/
 
 static std::string getContentType(const std::string& path)
 {
@@ -145,35 +138,27 @@ static std::string getContentType(const std::string& path)
         return "text/plain";
     return "application/octet-stream";
 }
-/*
-    create headers
-*/
+
+static std::string httpDate()
+{
+    char buf[128];
+    struct tm tm;
+    time_t now = time(NULL);
+
+    gmtime_r(&now, &tm);
+    strftime(buf, sizeof(buf), "%a %d %b %Y %H:%M:%S GMT", &tm);
+    return std::string(buf);
+}
 
 static void setBasicHeaders(HttpResponse& res)
 {
-    time_t t;
     res.headers["Content-Length"] = toString(res.body.size());
     res.headers["Date"] = httpDate();
+    res.headers["Server"] = "webserv/0.1";
 
     if (res.headers.find("Content-Type") == res.headers.end())
-        res.headers["Content-Type"] = "text/html";
+        res.headers["Content-Type"] = getContentType(".html");
 }
-
-// static
-int main() {
-    HttpResponse res;
-
-    setBasicHeaders(res);
-    std::map<std::string, std::string>::const_iterator it;
-    for (it = res.headers.begin(); it != res.headers.end();) {
-        std::cout << "HttpResponse key" << std::endl;
-        std::cout << it ->first << std::endl;
-        std::cout << "HttpResponse value" << std::endl;
-        std::cout << it -> second << std::endl;
-    }
-    return 0;
-}
-
 
 HttpResponse buildErrorResponse(int status_code)
 {
@@ -187,6 +172,27 @@ HttpResponse buildErrorResponse(int status_code)
     setBasicHeaders(res);
 
     return res;
+}
+
+HttpResponse handleGet(const HttpRequest& req, const ResponseContext& ctx)
+{
+    (void)req;
+    (void)ctx;
+
+    HttpResponse res;
+    res.status_code = 200;
+    res.reason_phrase = getReasonPhrase(200);
+    res.headers["Content-Type"] = "text/html";
+    res.body = "<h1>Hello from GET</h1>";
+    setBasicHeaders(res);
+    return res;
+}
+
+HttpResponse handlePost(const HttpRequest& req, const ResponseContext& ctx)
+{
+    (void)req;
+    (void)ctx;
+    return buildErrorResponse(501);
 }
 
 HttpResponse handleDelete(const HttpRequest& req, const ResponseContext& ctx)
