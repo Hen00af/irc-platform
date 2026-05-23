@@ -1,5 +1,4 @@
-#include "persing_conf.hpp"
-#include "../server/server.hpp"
+#include "parseConf.hpp"
 #include <algorithm>
 
 namespace {
@@ -231,60 +230,13 @@ void Conf::is_directive(std::string line, int pos) {
     throw DirWrong();
 }
 
-void Conf::read_file(std::string name) {
-    std::ifstream file(name.c_str());
-    if (!file.is_open())
-        throw ArgvErr();
-
-    std::string output;
-    while (std::getline(file, output)) {
-        bool is_empty = true;
-        for (size_t i = 0; i < output.length(); ++i) {
-            if (!isspace(static_cast<unsigned char>(output[i]))) {
-                is_empty = false;
-                break;
-            }
-        }
-        if (!is_empty)
-            _file.push_back(output);
-    }
-    if (_file.empty())
-        throw DirMissing();
-}
-
 void Conf::add_server() {
     _servers.push_back(ServerConfig());
-}
-
-std::string Conf::ft_first_word(std::string line) {
-    std::vector<std::string> tokens = split_words(line);
-    if (tokens.empty())
-        return "";
-    return tokens[0];
 }
 
 void validate_arguments(int argc, char **argv) {
     if (argc != 2 || argv == NULL || argv[1] == NULL)
         throw ArgvErr();
-}
-
-bool my_atoi(const std::string &str) {
-    if (str.empty())
-        return false;
-    for (size_t i = 0; i < str.size(); ++i) {
-        if (!std::isdigit(static_cast<unsigned char>(str[i])))
-            return false;
-    }
-    return true;
-}
-
-std::string trim(const std::string &input) {
-    const std::string spaces = " \t\r\n";
-    const std::string::size_type start = input.find_first_not_of(spaces);
-    if (start == std::string::npos)
-        return "";
-    const std::string::size_type end = input.find_last_not_of(spaces);
-    return input.substr(start, end - start + 1);
 }
 
 bool is_valid_method(const std::string &method) {
@@ -295,6 +247,13 @@ bool is_valid_listing_value(const std::string &value) {
     return value == "on" || value == "off";
 }
 
-std::vector<std::string> Conf::split_words(std::string line) {
-    return split_line(line);
+void parseArgs(int argc, char **argv, Conf &conf)
+{
+    validate_arguments(argc, argv);
+
+    conf.read_file(argv[1]);
+    conf.check_directive();
+    conf.init_file_pos();
+    conf.stock_data();
+    conf.check_data();
 }
