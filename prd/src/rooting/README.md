@@ -1,3 +1,25 @@
+## TCP/IPにおける、send関数に渡すオブジェクトを作成する箇所です。
+
+```
+raw request
+   ↓
+RequestParser
+   ↓
+HttpRequest
+   ↓
+Router / RequestHandler
+   ↓
+Response
+   ↓
+ResponseBuilder
+   ↓
+send() 
+```
+
+HttpResponse handle_request(const HttpRequest& req, const Conf& cond);
+
+
+=======
 # rooting/ — routing 層
 
 パース済みリクエスト（method / target / Host）と設定 (`ServerConfig[]`) を突き合わせて、**「どのハンドラに渡すか / どのファイルパスか / 405 か」を決める** レイヤ。I/O はしない、ファイルも開かない。

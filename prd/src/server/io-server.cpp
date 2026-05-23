@@ -116,10 +116,11 @@ Server::~Server()
         close(_client_fd);
         _client_fd = -1;
     }
+}
+
 void tcp(Conf &conf) {
     Server serv;
     // Request req;
     serv.boot_server(conf);
     // req.parse_request();
-}
 }

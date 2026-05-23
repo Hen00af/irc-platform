@@ -1,6 +1,8 @@
 # ifndef REQUEST
 # define REQUEST
 
+# include <string>
+
 /*
     HTTP　key
     Connection
@@ -81,6 +83,13 @@
 /*
     ============================================================================================================================================
 */
+
+struct HttpRequest
+{
+    std::string method;
+    std::string target;
+    std::string body;
+};
 
 
 #endif //REQUEST
