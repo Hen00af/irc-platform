@@ -1,7 +1,6 @@
-#ifndef PersingConf_HPP
-# define PersingConf_HPP
+#ifndef ParseConf_HPP
+# define ParseConf_HPP
 
-#include "../server/server.hpp"
 # include <iostream>
 # include <fstream>
 # include <vector>
@@ -20,7 +19,7 @@
 
 class Conf;
 
-void parsing_args(int argc, char **argv, Conf &conf);
+void parseArgs(int argc, char **argv, Conf &conf);
 void validate_arguments(int argc, char **argv);
 
 /* conf_utils */
