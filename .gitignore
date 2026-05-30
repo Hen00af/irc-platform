@@ -1,0 +1,9 @@
+nginx-1.30.0/
+sample/newb/
+sample/webserv/
+a.out
+*.o
+tmp.cpp
+text.txt
+enkwak.cpp
+Dockerfile
