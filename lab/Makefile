@@ -24,7 +24,7 @@ shell:
 	$(COMPOSE) exec $(SERVICE) bash
 
 test:
-	curl -i http://localhost:8080/
+	curl -i http://localhost:18080/
 
 clean:
 	$(COMPOSE) down --rmi all --volumes --remove-orphans
