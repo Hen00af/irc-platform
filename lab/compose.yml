@@ -1,0 +1,10 @@
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lab-nginx
+    ports:
+      - "8080:4040"
+    volumes:
+      - ./www:/workspace/www
