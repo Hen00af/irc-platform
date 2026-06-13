@@ -1,0 +1,11 @@
+services:
+  webserv:
+    build:
+      context: .
+    platform: linux/amd64
+    container_name: webserv-container
+    working_dir: /workspace
+    volumes:
+      - ./prd:/workspace
+    stdin_open: true
+    tty: true
