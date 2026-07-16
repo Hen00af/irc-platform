@@ -1,0 +1,8 @@
+services:
+  valgrind:
+    container_name: 42tokyo
+    build: .
+    volumes:
+      - .:/root/srcs
+      - ./zshrc:/root/.zshrc
+    tty: true
