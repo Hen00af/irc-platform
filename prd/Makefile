@@ -12,11 +12,13 @@ CXXFLAGS = -Wall -Wextra -Werror -std=c++98
 #    無効化されるため、除外中のファイルは行継続なしで記載する)
 SRCS    = domain/Client.cpp \
            domain/Channel.cpp \
-           util/IrcUtil.cpp
+           util/IrcUtil.cpp \
+           util/BufferUtil.cpp
 
 HEADERS = domain/Client.hpp \
            domain/Channel.hpp \
-           util/IrcUtil.hpp
+           util/IrcUtil.hpp \
+           util/BufferUtil.hpp
 
 OBJS    = $(SRCS:.cpp=.o)
 
