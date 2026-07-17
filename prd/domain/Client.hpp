@@ -105,7 +105,7 @@ public:
 
     /* ── 受信バッファ ─────────────────────── */
 
-    /* 完成行の判定と取り出しには IrcUtil::hasCompleteLine() /
+    /* 完成行の判定と取り出しには BufferUtil::hasCompleteLine() /
        BufferUtil::findLine() へこの参照を渡す */
     const std::string &getReceiveBuffer() const;
 
