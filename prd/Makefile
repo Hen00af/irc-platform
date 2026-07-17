@@ -11,10 +11,12 @@ CXXFLAGS = -Wall -Wextra -Werror -std=c++98
 #   (コメント行末に \ を置くとコメントが次行へ継続し、SRCS の定義ごと
 #    無効化されるため、除外中のファイルは行継続なしで記載する)
 SRCS    = domain/Client.cpp \
-           domain/Channel.cpp
+           domain/Channel.cpp \
+           util/IrcUtil.cpp
 
 HEADERS = domain/Client.hpp \
-           domain/Channel.hpp
+           domain/Channel.hpp \
+           util/IrcUtil.hpp
 
 OBJS    = $(SRCS:.cpp=.o)
 
