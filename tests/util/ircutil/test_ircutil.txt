@@ -1,0 +1,253 @@
+IrcUtil テスト項目
+======================================================================
+
+IRC の文字列規則。case mapping、Nickname と Channel 名の検証、行長、整形
+
+  実行:     cd tests && make test-ircutil
+  生成元:   tests/util/ircutil/test_ircutil.cpp
+  再生成:   cd tests && make spec
+
+このファイルは自動生成される。編集しても再生成で消える。
+項目を直すときはテストコードのアサーション名を直すこと。
+
+  項目数        200 (テストコード上)
+  実行時        203 件
+                ループで同じ項目を複数の値へ適用するため、実行時の方が多い
+
+======================================================================
+
+[ 定数 ]  5 項目
+
+    1. IrcUtil: IRC_MAX_LINE は 512 (CRLF 込み)
+    2. IrcUtil: IRC_MAX_CONTENT は 510
+    3. IrcUtil: NICKNAME_MAX_LENGTH は 9
+    4. IrcUtil: CHANNEL_NAME_MAX_LENGTH は 50
+    5. IrcUtil: 本文 + CRLF が行長上限に一致
+
+[ toUpperAscii ]  7 項目
+
+    6. toUpperAscii: 小文字を大文字へ
+    7. toUpperAscii: 大小混在
+    8. toUpperAscii: 既に大文字
+    9. toUpperAscii: 空文字
+   10. toUpperAscii: 数字と記号は不変
+   11. toUpperAscii: 特殊文字は不変
+   12. toUpperAscii: 非ASCIIは不変
+
+[ ircCaseFold ]  15 項目
+
+   13. ircCaseFold: A-Z を a-z へ
+   14. ircCaseFold: 既に小文字
+   15. ircCaseFold: 空文字
+   16. ircCaseFold: [ を { へ
+   17. ircCaseFold: ] を } へ
+   18. ircCaseFold: バックスラッシュを | へ
+   19. ircCaseFold: ^ を ~ へ
+   20. ircCaseFold: 特殊文字をまとめて
+   21. ircCaseFold: { } | ~ は不変
+   22. ircCaseFold: Nickname の実例
+   23. ircCaseFold: 変換結果を再変換しても不変 (冪等)
+   24. ircCaseFold: 数字と - は不変
+   25. ircCaseFold: _ と ` は不変
+   26. ircCaseFold: 大小違いが同じ Key になる
+   27. ircCaseFold: [ と { が同じ Key になる
+
+[ normalizeChannelName ]  4 項目
+
+   28. normalizeChannelName: 大文字を小文字へ
+   29. normalizeChannelName: 特殊文字も case mapping
+   30. normalizeChannelName: # は保持
+   31. normalizeChannelName: 大小違いが同じ Key になる
+
+[ isValidNickname ]  37 項目
+
+   32. isValidNickname: 通常
+   33. isValidNickname: 1 文字
+   34. isValidNickname: 9 文字 (上限)
+   35. isValidNickname: 10 文字 (上限超過)
+   36. isValidNickname: 空文字
+   37. isValidNickname: 先頭 [
+   38. isValidNickname: 先頭 ]
+   39. isValidNickname: 先頭 バックスラッシュ
+   40. isValidNickname: 先頭 `
+   41. isValidNickname: 先頭 _
+   42. isValidNickname: 先頭 ^
+   43. isValidNickname: 先頭 {
+   44. isValidNickname: 先頭 |
+   45. isValidNickname: 先頭 }
+   46. isValidNickname: 先頭が数字
+   47. isValidNickname: 先頭が -
+   48. isValidNickname: 途中に数字
+   49. isValidNickname: 途中に -
+   50. isValidNickname: 途中に特殊文字
+   51. isValidNickname: 英数記号の混在
+   52. isValidNickname: 空白を含む
+   53. isValidNickname: comma を含む
+   54. isValidNickname: colon を含む
+   55. isValidNickname: CR を含む
+   56. isValidNickname: LF を含む
+   57. isValidNickname: NUL を含む
+   58. isValidNickname: 先頭が空白
+   59. isValidNickname: # を含む
+   60. isValidNickname: @ を含む
+   61. isValidNickname: ! を含む
+   62. isValidNickname: . を含む
+   63. isValidNickname: 先頭 @
+   64. isValidNickname: 先頭 #
+   65. isValidNickname: 先頭 ~ は不可 (special ではない)
+   66. isValidNickname: 途中の ~ も不可
+   67. isValidNickname: ^a は妥当
+   68. isValidNickname: ^a の fold 結果 ~a は Nickname として不正
+
+[ isValidChannelName ]  18 項目
+
+   69. isValidChannelName: 通常
+   70. isValidChannelName: 2 文字 (下限)
+   71. isValidChannelName: # だけ (1 文字)
+   72. isValidChannelName: 空文字
+   73. isValidChannelName: # で始まらない
+   74. isValidChannelName: & で始まる (Mandatory 対象外)
+   75. isValidChannelName: 50 文字 (上限)
+   76. isValidChannelName: 51 文字 (上限超過)
+   77. isValidChannelName: 空白を含む
+   78. isValidChannelName: comma を含む
+   79. isValidChannelName: colon を含む
+   80. isValidChannelName: BELL を含む
+   81. isValidChannelName: CR を含む
+   82. isValidChannelName: LF を含む
+   83. isValidChannelName: NUL を含む
+   84. isValidChannelName: # を 2 つ
+   85. isValidChannelName: 大文字を含む (正規化は別責務)
+   86. isValidChannelName: 記号を含む
+
+[ parsePositiveSize ]  38 項目
+
+   87. parsePositiveSize: 1
+   88. parsePositiveSize: 1 の値
+   89. parsePositiveSize: 10
+   90. parsePositiveSize: 10 の値
+   91. parsePositiveSize: 100000
+   92. parsePositiveSize: 100000 の値
+   93. parsePositiveSize: 先頭 0 つき
+   94. parsePositiveSize: 先頭 0 つきの値
+   95. parsePositiveSize: 0 は不可
+   96. parsePositiveSize: 000 も不可
+   97. parsePositiveSize: 先頭 + は不可
+   98. parsePositiveSize: 先頭 - は不可
+   99. parsePositiveSize: 空文字
+  100. parsePositiveSize: 英字混じり
+  101. parsePositiveSize: 小数点
+  102. parsePositiveSize: 空白混じり
+  103. parsePositiveSize: 前後の空白
+  104. parsePositiveSize: 100001 も受理する (上限は Handler 責務)
+  105. parsePositiveSize: 100001 の値
+  106. parsePositiveSize: 埋め込み NUL
+  107. parsePositiveSize: size_t の max ちょうどは受理
+  108. parsePositiveSize: max の値
+  109. parsePositiveSize: max - 1 は受理
+  110. parsePositiveSize: max - 1 の値
+  111. parsePositiveSize: max の末尾は 5 (テストの前提)
+  112. parsePositiveSize: max を超える値は拒否 (末尾 <値>)
+  113. parsePositiveSize: max の 10 倍は拒否
+  114. parsePositiveSize: 極端な桁数
+  115. parsePositiveSize: 先頭 0 が 100 個でも overflow しない
+  116. parsePositiveSize: 先頭 0 が 100 個の値
+  117. parsePositiveSize: 非数字で失敗
+  118. parsePositiveSize: 非数字の失敗で result は不変
+  119. parsePositiveSize: 0 で失敗
+  120. parsePositiveSize: 0 の失敗で result は不変
+  121. parsePositiveSize: overflow で失敗
+  122. parsePositiveSize: overflow の失敗で result は不変
+  123. parsePositiveSize: 空文字で失敗
+  124. parsePositiveSize: 空文字の失敗で result は不変
+
+[ fitsIrcLine ]  4 項目
+
+  125. fitsIrcLine: 空文字
+  126. fitsIrcLine: 本文が上限ちょうど (CRLF 込みで 512)
+  127. fitsIrcLine: 本文が上限 + 1 は超過
+  128. fitsIrcLine: 本文が上限 - 1
+
+[ isSafeToken ]  17 項目
+
+  129. isSafeToken: 通常の Nickname
+  130. isSafeToken: Client Prefix
+  131. isSafeToken: Server 名
+  132. isSafeToken: Command
+  133. isSafeToken: 途中の colon は許可 (IPv6)
+  134. isSafeToken: 途中の colon だけの token
+  135. isSafeToken: 空文字
+  136. isSafeToken: 先頭 colon
+  137. isSafeToken: colon だけ
+  138. isSafeToken: 空白を含む
+  139. isSafeToken: 先頭が空白
+  140. isSafeToken: 末尾が空白
+  141. isSafeToken: CR を含む
+  142. isSafeToken: LF を含む
+  143. isSafeToken: NUL を含む
+  144. isSafeToken: CRLF injection を狙った Nickname
+  145. isSafeToken: 空白入りの serverName は不正
+
+[ sanitizeMessageText ]  18 項目
+
+  146. sanitizeMessageText: 変換不要
+  147. sanitizeMessageText: 空文字
+  148. sanitizeMessageText: CR を除去
+  149. sanitizeMessageText: LF を除去
+  150. sanitizeMessageText: CRLF を除去
+  151. sanitizeMessageText: NUL を除去
+  152. sanitizeMessageText: 連続する制御文字を除去
+  153. sanitizeMessageText: 先頭と末尾の制御文字を除去
+  154. sanitizeMessageText: 空白と colon は保持
+  155. sanitizeMessageText: TAB は保持
+  156. sanitizeMessageText: 非 ASCII は保持
+  157. sanitizeMessageText: CTCP の \x01 は保持
+  158. sanitizeMessageText: BELL は保持
+  159. sanitizeMessageText: ESC は保持 (色コード)
+  160. sanitizeMessageText: 高位バイトと制御文字の混在
+  161. sanitizeMessageText: 制御文字だけなら空文字
+  162. sanitizeMessageText: 注入された行を 1 行へ潰す
+  163. sanitizeMessageText: 制御文字をすべて除去した結果
+
+[ splitCommaList ]  31 項目
+
+  164. splitCommaList: 3 要素
+  165. splitCommaList: 1 番目
+  166. splitCommaList: 2 番目
+  167. splitCommaList: 3 番目
+  168. splitCommaList: comma なしは 1 要素
+  169. splitCommaList: comma なしの内容
+  170. splitCommaList: 空文字は空の vector
+  171. splitCommaList: 空要素も残す
+  172. splitCommaList: 空要素の前
+  173. splitCommaList: 空要素は空文字
+  174. splitCommaList: 空要素の後
+  175. splitCommaList: 末尾 comma は空要素を生む
+  176. splitCommaList: 末尾の空要素
+  177. splitCommaList: 先頭 comma は空要素を生む
+  178. splitCommaList: 先頭の空要素
+  179. splitCommaList: 先頭 comma の後
+  180. splitCommaList: comma だけなら空要素 2 つ
+  181. splitCommaList: comma だけの 1 番目
+  182. splitCommaList: comma だけの 2 番目
+  183. splitCommaList: comma 2 つなら空要素 3 つ
+  184. splitCommaList: 空白を trim しない要素数
+  185. splitCommaList: trim しない 1 番目
+  186. splitCommaList: 空白を trim しない
+  187. splitCommaList: Channel 数と Key 数が一致
+  188. splitCommaList: #a の Key
+  189. splitCommaList: #b は Key なし
+  190. splitCommaList: #c の Key
+  191. splitCommaList: Channel は 3 個
+  192. splitCommaList: Key は 1 個のまま padding しない
+  193. splitCommaList: Key 一覧が短くなり得る
+  194. splitCommaList: Key Parameter なしは 0 個
+
+[ ASCII 全域の網羅 ]  6 項目
+
+  195. isValidNickname: 先頭に許可される ASCII は 61 種 (52+9)
+  196. isValidNickname: 2 文字目に許可される ASCII は 72 種
+  197. ircCaseFold: 変換される ASCII は 30 種 (26+4)
+  198. ircCaseFold: 非 ASCII は変換しない
+  199. toUpperAscii: 非 ASCII は変換しない
+  200. toUpperAscii: 変換される ASCII は 26 種

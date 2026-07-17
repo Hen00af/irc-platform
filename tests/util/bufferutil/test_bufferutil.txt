@@ -1,0 +1,92 @@
+BufferUtil テスト項目
+======================================================================
+
+受信バッファからの行切り出し。分割受信の復元と行長境界
+
+  実行:     cd tests && make test-bufferutil
+  生成元:   tests/util/bufferutil/test_bufferutil.cpp
+  再生成:   cd tests && make spec
+
+このファイルは自動生成される。編集しても再生成で消える。
+項目を直すときはテストコードのアサーション名を直すこと。
+
+  項目数        70 (テストコード上)
+  実行時        70 件
+
+======================================================================
+
+[ hasCompleteLine ]  7 項目
+
+    1. hasCompleteLine: 空バッファ
+    2. hasCompleteLine: LF なし
+    3. hasCompleteLine: CR のみ
+    4. hasCompleteLine: LF あり
+    5. hasCompleteLine: CRLF あり
+    6. hasCompleteLine: 空行
+    7. hasCompleteLine: 途中に LF、末尾は未完成
+
+[ findLine ]  63 項目
+
+    8. findLine: 空バッファ
+    9. findLine: 空バッファは consumed = 0
+   10. findLine: LF なしは未完成
+   11. findLine: CR だけでは未完成
+   12. findLine: CRLF 終端
+   13. findLine: CRLF 終端の本文
+   14. findLine: CRLF 終端の consumed
+   15. findLine: LF のみ終端
+   16. findLine: LF のみ終端の本文
+   17. findLine: LF のみ終端の consumed
+   18. findLine: 空行 (LF のみ)
+   19. findLine: 空行の本文は空文字
+   20. findLine: 空行の consumed
+   21. findLine: 空行 (CRLF)
+   22. findLine: 空行 (CRLF) の本文は空文字
+   23. findLine: 空行 (CRLF) の consumed
+   24. findLine: 途中の CR は保持
+   25. findLine: 途中の CR は保持 (本文)
+   26. findLine: 連続 CR は末尾 1 つだけ除去
+   27. findLine: 連続 CR は末尾 1 つだけ除去 (本文)
+   28. findLine: 先頭が LF なら空行を返す
+   29. findLine: 先頭が LF の本文は空文字
+   30. findLine: 先頭が LF の consumed
+   31. findLine: NUL を含む行も取り出す
+   32. findLine: NUL を含む行の本文長
+   33. findLine: 複数行 1 行目
+   34. findLine: 複数行 1 行目の本文
+   35. findLine: 複数行 2 行目
+   36. findLine: 複数行 2 行目の本文
+   37. findLine: 複数行の残りは未完成
+   38. findLine: 未完成分がバッファに残る
+   39. findLine: 分割受信 'com' は未完成
+   40. findLine: 分割受信 'comman' は未完成
+   41. findLine: 分割受信 'command\n' で完成
+   42. findLine: 分割受信の復元結果
+   43. findLine: CR で終わるバッファは未完成
+   44. findLine: LF 到着で完成
+   45. findLine: CRLF 分断でも本文は正しい
+   46. findLine: 本文 510 + CRLF (512 byte) は受理
+   47. findLine: 本文 510 + CRLF の本文長
+   48. findLine: 本文 510 + CRLF の consumed
+   49. findLine: 本文 510 + LF のみ も受理
+   50. findLine: 本文 510 + LF のみ の consumed
+   51. findLine: 本文 511 + CRLF は超過
+   52. findLine: 本文 511 + CRLF 超過時の consumed
+   53. findLine: 本文 511 + LF のみ も超過
+   54. findLine: 本文 511 + LF のみ 超過時の consumed
+   55. findLine: LF なし 512 は超過
+   56. findLine: 超過時の consumed は破棄すべきバイト数
+   57. findLine: 超過時は out を変更しない
+   58. findLine: 本文 511 + CRLF は超過 (out 契約)
+   59. findLine: 完成行が超過でも out を変更しない
+   60. findLine: LF なしは未完成 (out 契約)
+   61. findLine: 未完成時の consumed は 0
+   62. findLine: 未完成時は out を変更しない
+   63. findLine: LF なし 1000 byte も超過
+   64. findLine: LF なし超過の consumed はバッファ全体
+   65. findLine: LF なし 510 byte は未完成
+   66. findLine: LF なし 511 byte は未完成 (510+CR の可能性)
+   67. findLine: LF なし 512 byte は超過
+   68. findLine: 本文 510 + CR は LF 待ち
+   69. findLine: 本文 510 + CR + LF は受理
+   70. findLine: 分割された最大長行の本文長
