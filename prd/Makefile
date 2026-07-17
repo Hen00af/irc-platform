@@ -13,12 +13,15 @@ CXXFLAGS = -Wall -Wextra -Werror -std=c++98
 SRCS    = domain/Client.cpp \
            domain/Channel.cpp \
            util/IrcUtil.cpp \
-           util/BufferUtil.cpp
+           util/BufferUtil.cpp \
+           util/Parser.cpp
 
 HEADERS = domain/Client.hpp \
            domain/Channel.hpp \
+           domain/Message.hpp \
            util/IrcUtil.hpp \
-           util/BufferUtil.hpp
+           util/BufferUtil.hpp \
+           util/Parser.hpp
 
 OBJS    = $(SRCS:.cpp=.o)
 
