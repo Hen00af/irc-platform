@@ -1,0 +1,149 @@
+Reply テスト項目
+======================================================================
+
+送信行の組み立て。Prefix、Numeric、CRLF injection の防御
+
+  実行:     cd tests && make test-reply
+  生成元:   tests/util/reply/test_reply.cpp
+  再生成:   cd tests && make spec
+
+このファイルは自動生成される。編集しても再生成で消える。
+項目を直すときはテストコードのアサーション名を直すこと。
+
+  項目数        106 (テストコード上)
+  実行時        106 件
+
+======================================================================
+
+[ clientPrefix ]  5 項目
+
+    1. Reply: clientPrefix
+    2. Reply: 全未設定の clientPrefix
+    3. Reply: Hostname 未設定の fallback
+    4. Reply: Username 未設定の fallback
+    5. Reply: Nickname 未設定の fallback
+
+[ serverPrefix ]  1 項目
+
+    6. Reply: serverPrefix も colon なし
+
+[ numeric ]  12 項目
+
+    7. Reply: numeric の基本形
+    8. Reply: 1 桁 code を 3 桁へ 0 詰め
+    9. Reply: 2 桁 code を 3 桁へ 0 詰め
+   10. Reply: 3 桁 code はそのまま
+   11. Reply: code 0
+   12. Reply: code 999
+   13. Reply: Parameter が空の numeric
+   14. Reply: 未登録 Client への numeric は target が *
+   15. Reply: 負の code は空文字
+   16. Reply: 1000 以上の code は空文字
+   17. Reply: 空の serverName は空文字
+   18. Reply: 空白を含む serverName は空文字
+
+[ command ]  13 項目
+
+   19. Reply: command が prefix へ colon を付ける
+   20. Reply: PRIVMSG の組み立て
+   21. Reply: MODE の組み立て
+   22. Reply: prefix なしの command
+   23. Reply: Parameter が空の command
+   24. Reply: prefix も Parameter も空
+   25. Reply: Server Prefix の ERROR
+   26. Reply: 空の command は空文字
+   27. Reply: 空白を含む command は空文字
+   28. Reply: 空白を含む prefix は空文字
+   29. Reply: CR を含む prefix は空文字
+   30. Reply: LF を含む command は空文字
+   31. Reply: NUL を含む prefix は空文字
+
+[ CRLF injection の防御 (設計書 06 §21) ]  35 項目
+
+   32. Reply: 単独 CR を除去して 1 行に保つ
+   33. Reply: CRLF を除去して 1 行に保つ
+   34. Reply: 単独 LF を除去して 1 行に保つ
+   35. Reply: numeric の Parameter も sanitize する
+   36. Reply: 生成行に CR が残らない
+   37. Reply: 生成行に LF が残らない
+   38. Reply: 生成行に NUL が残らない
+   39. Reply: numeric の生成行に CR が残らない
+   40. Reply: numeric の生成行に LF が残らない
+   41. Reply: numeric の生成行に NUL が残らない
+   42. Reply: CR のみを含む Nickname は command で空文字
+   43. Reply: CR のみを含む Nickname は numeric の target で空文字
+   44. Reply: LF のみを含む Nickname は command で空文字
+   45. Reply: LF のみを含む Nickname は numeric の target で空文字
+   46. Reply: NUL のみを含む Nickname は numeric の target で空文字
+   47. Reply: 空白のみを含む Nickname は numeric の target で空文字
+   48. Reply: CR を含む Username の prefix は command で空文字
+   49. Reply: LF を含む Username の prefix は command で空文字
+   50. Reply: 空白を含む Username の prefix は command で空文字
+   51. Reply: Realname は prefix に入らない
+   52. Reply: CR を含む serverName は空文字
+   53. Reply: LF を含む serverName は空文字
+   54. Reply: NUL を含む serverName は空文字
+   55. Reply: CR を含む command は空文字
+   56. Reply: NUL を含む command は空文字
+   57. Reply: 先頭 colon の Nickname は numeric の target で空文字
+   58. Reply: 先頭 colon の prefix は空文字
+   59. Reply: 先頭 colon の command は空文字
+   60. Reply: 先頭 colon の serverName は空文字
+   61. Reply: IPv6 hostname の prefix
+   62. Reply: 途中に colon を含む prefix は許可する
+   63. Reply: CR だけの Parameter は末尾空白を残さない
+   64. Reply: CRLF だけの Parameter は末尾空白を残さない
+   65. Reply: numeric でも末尾空白を残さない
+   66. Reply: 末尾が CR の Parameter
+
+[ CRLF は付けない (設計書 02 §9, 06 §2) ]  2 項目
+
+   67. Reply: numeric は CRLF を含まない
+   68. Reply: command は CRLF を含まない
+
+[ 行長 (設計書 06 §13) ]  3 項目
+
+   69. Reply: 上限超過でも切り詰めない
+   70. Reply: 上限超過は fitsIrcLine で検出できる
+   71. Reply: 通常の行は fitsIrcLine を満たす
+
+[ Welcome シーケンス (設計書 06 §6) ]  2 項目
+
+   72. Reply: 001 RPL_WELCOME
+   73. Reply: 422 ERR_NOMOTD
+
+[ Numeric 定数 (設計書 06 §8) ]  33 項目
+
+   74. Numeric: RPL_WELCOME
+   75. Numeric: RPL_YOURHOST
+   76. Numeric: RPL_CREATED
+   77. Numeric: RPL_MYINFO
+   78. Numeric: RPL_CHANNELMODEIS
+   79. Numeric: RPL_NOTOPIC
+   80. Numeric: RPL_TOPIC
+   81. Numeric: RPL_INVITING
+   82. Numeric: RPL_NAMREPLY
+   83. Numeric: RPL_ENDOFNAMES
+   84. Numeric: ERR_NOSUCHNICK
+   85. Numeric: ERR_NOSUCHCHANNEL
+   86. Numeric: ERR_CANNOTSENDTOCHAN
+   87. Numeric: ERR_NOORIGIN
+   88. Numeric: ERR_NORECIPIENT
+   89. Numeric: ERR_NOTEXTTOSEND
+   90. Numeric: ERR_UNKNOWNCOMMAND
+   91. Numeric: ERR_NOMOTD
+   92. Numeric: ERR_NONICKNAMEGIVEN
+   93. Numeric: ERR_ERRONEUSNICKNAME
+   94. Numeric: ERR_NICKNAMEINUSE
+   95. Numeric: ERR_USERNOTINCHANNEL
+   96. Numeric: ERR_NOTONCHANNEL
+   97. Numeric: ERR_USERONCHANNEL
+   98. Numeric: ERR_NOTREGISTERED
+   99. Numeric: ERR_NEEDMOREPARAMS
+  100. Numeric: ERR_ALREADYREGISTRED
+  101. Numeric: ERR_PASSWDMISMATCH
+  102. Numeric: ERR_CHANNELISFULL
+  103. Numeric: ERR_UNKNOWNMODE
+  104. Numeric: ERR_INVITEONLYCHAN
+  105. Numeric: ERR_BADCHANNELKEY
+  106. Numeric: ERR_CHANOPRIVSNEEDED

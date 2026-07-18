@@ -1,0 +1,182 @@
+Parser テスト項目
+======================================================================
+
+文字列から Message への変換
+
+  実行:     cd tests && make test-parser
+  生成元:   tests/util/parser/test_parser.cpp
+  再生成:   cd tests && make spec
+
+このファイルは自動生成される。編集しても再生成で消える。
+項目を直すときはテストコードのアサーション名を直すこと。
+
+  項目数        130 (テストコード上)
+  実行時        130 件
+
+======================================================================
+
+[ 基本形 ]  11 項目
+
+    1. Parser: 単純な Command
+    2. Parser: prefix は空
+    3. Parser: command
+    4. Parser: params 数
+    5. Parser: params[0]
+    6. Parser: 複数 Parameter
+    7. Parser: 複数 Parameter の command
+    8. Parser: 複数 Parameter の数
+    9. Parser: 複数 Parameter[0]
+   10. Parser: 複数 Parameter[1]
+   11. Parser: 複数 Parameter[2]
+
+[ 引数なしコマンド ]  6 項目
+
+   12. Parser: 引数なしコマンド
+   13. Parser: 引数なしの command
+   14. Parser: 引数なしの params は空
+   15. Parser: 末尾空白つき引数なしコマンド
+   16. Parser: 末尾空白つきの command
+   17. Parser: 末尾空白は Parameter にしない
+
+[ Command の大文字・小文字 ]  5 項目
+
+   18. Parser: 小文字 Command を大文字へ
+   19. Parser: 大小混在 Command を大文字へ
+   20. Parser: 既に大文字の Command
+   21. Parser: Parameter は大文字化しない
+   22. Parser: 数値 Command
+
+[ Prefix ]  12 項目
+
+   23. Parser: Prefix つき
+   24. Parser: prefix
+   25. Parser: Prefix つきの command
+   26. Parser: Prefix つきの params 数
+   27. Parser: Prefix つきの params[0]
+   28. Parser: Prefix つきの params[1]
+   29. Parser: Prefix + 引数なし Command
+   30. Parser: Prefix のみの prefix
+   31. Parser: Prefix のみの command
+   32. Parser: Prefix のみの params
+   33. Parser: prefix は正規化しない
+   34. Parser: prefix つきでも command は大文字化
+
+[ Trailing parameter ]  16 項目
+
+   35. Parser: Trailing に空白を含む
+   36. Parser: Trailing の params 数
+   37. Parser: Trailing 前の Parameter
+   38. Parser: Trailing は空白を保持
+   39. Parser: Trailing 内の colon を保持
+   40. Parser: Trailing 先頭の空白を保持
+   41. Parser: Trailing 末尾の空白を保持
+   42. Parser: 空の Trailing
+   43. Parser: 空 Trailing の params 数
+   44. Parser: 空 Trailing は空文字の Parameter
+   45. Parser: Trailing だけ
+   46. Parser: Trailing だけの params 数
+   47. Parser: Trailing だけの内容
+   48. Parser: Trailing 内の連続空白を保持
+   49. Parser: Trailing 以降を分割しない params 数
+   50. Parser: Trailing 以降を分割しない内容
+
+[ 空白区切りの寛容な扱い ]  10 項目
+
+   51. Parser: Parameter 間の連続空白
+   52. Parser: 連続空白でも params 数は同じ
+   53. Parser: 連続空白でも params[0]
+   54. Parser: 連続空白でも params[1]
+   55. Parser: 先頭に空白
+   56. Parser: 先頭空白つきの command
+   57. Parser: 先頭空白つきの params[0]
+   58. Parser: Prefix 後の連続空白
+   59. Parser: Prefix 後の連続空白の prefix
+   60. Parser: Prefix 後の連続空白の command
+
+[ 空行・不正入力 ]  17 項目
+
+   61. Parser: 空行
+   62. Parser: 空白だけの行
+   63. Parser: colon だけ
+   64. Parser: Prefix のみで Command なし
+   65. Parser: Prefix のみ + 末尾空白
+   66. Parser: colon + 空白
+   67. Parser: NUL を含む行
+   68. Parser: 先頭が NUL の行
+   69. Parser: 末尾が NUL の行
+   70. Parser: 成功時の command
+   71. Parser: 続く空行の解析は失敗
+   72. Parser: 失敗しても out は変更されない
+   73. Parser: 失敗しても params は変更されない
+   74. Parser: 引数なし Command で上書き
+   75. Parser: 上書き後の params は空
+   76. Parser: prefix を設定
+   77. Parser: prefix なしの行で prefix が消える
+
+[ Parameter 数上限 (15) ]  8 項目
+
+   78. Parser: Parameter 15 個は受理
+   79. Parser: Parameter 15 個の数
+   80. Parser: Parameter 15 個目
+   81. Parser: Parameter 16 個は破棄
+   82. Parser: Middle 15 + Trailing は破棄
+   83. Parser: Middle 14 + Trailing は受理
+   84. Parser: Middle 14 + Trailing の数
+   85. Parser: Middle 14 + Trailing の末尾
+
+[ CR の扱い ]  2 項目
+
+   86. Parser: Trailing 内の CR を含む行も解析する
+   87. Parser: Trailing 内の CR を保持
+
+[ 実コマンドの例 ]  25 項目
+
+   88. Parser: USER を解析できる
+   89. Parser: USER の command
+   90. Parser: USER の params 数
+   91. Parser: USER の username
+   92. Parser: USER の mode
+   93. Parser: USER の unused
+   94. Parser: USER の realname
+   95. Parser: JOIN を解析できる
+   96. Parser: JOIN の params 数
+   97. Parser: JOIN の Channel 一覧 (分割は Handler の責務)
+   98. Parser: JOIN の Key 一覧
+   99. Parser: KICK を解析できる
+  100. Parser: KICK の params 数
+  101. Parser: KICK の reason
+  102. Parser: MODE を解析できる
+  103. Parser: MODE の params 数
+  104. Parser: MODE の Mode 文字列
+  105. Parser: CAP を解析できる
+  106. Parser: CAP の command
+  107. Parser: CAP の subcommand
+  108. Parser: QUIT を解析できる
+  109. Parser: 引数なし QUIT
+  110. Parser: 引数なし QUIT の params
+  111. Parser: PING を解析できる
+  112. Parser: PING の token
+
+[ 病的な入力 ]  17 項目
+
+  113. Parser: Trailing が colon で始まる
+  114. Parser: Trailing の 2 つ目の colon は本文
+  115. Parser: colon 2 つだけ
+  116. Parser: colon 3 つだけ
+  117. Parser: prefix に colon を含む
+  118. Parser: prefix 内の colon を保持
+  119. Parser: 先頭空白のあとに prefix
+  120. Parser: 先頭空白つき prefix
+  121. Parser: 先頭空白つき prefix の command
+  122. Parser: 通常 Parameter 内の CR を含む行
+  123. Parser: 通常 Parameter 内の CR を保持
+  124. Parser: TAB は区切りではない
+  125. Parser: TAB は Command の一部になる
+  126. Parser: TAB 区切りでは Parameter が生じない
+  127. Parser: 長い Trailing も解析する
+  128. Parser: 長い Trailing の長さを保つ
+  129. Parser: Trailing 内の NUL も破棄
+
+[ 定数 ]  1 項目
+
+  130. Parser: MAX_PARAMS は 15

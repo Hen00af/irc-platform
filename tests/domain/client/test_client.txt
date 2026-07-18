@@ -1,0 +1,166 @@
+Client テスト項目
+======================================================================
+
+1 接続分の状態。登録フロー、所属 Channel、送受信バッファ
+
+  実行:     cd tests && make test-client
+  生成元:   tests/domain/client/test_client.cpp
+  再生成:   cd tests && make spec
+
+このファイルは自動生成される。編集しても再生成で消える。
+項目を直すときはテストコードのアサーション名を直すこと。
+
+  項目数        116 (テストコード上)
+  実行時        143 件
+                ループで同じ項目を複数の値へ適用するため、実行時の方が多い
+
+======================================================================
+
+[ Constructor ]  15 項目
+
+    1. Client: getFd
+    2. Client: getHostname
+    3. Client: 接続直後の Nickname は空
+    4. Client: 接続直後の Username は空
+    5. Client: 接続直後の Realname は空
+    6. Client: 接続直後の受信バッファは空
+    7. Client: 接続直後の送信バッファは空
+    8. Client: 接続直後は PASS 未承認
+    9. Client: 接続直後は Nickname 未設定
+   10. Client: 接続直後は USER 未受信
+   11. Client: 接続直後は未登録
+   12. Client: 接続直後は送信待ちなし
+   13. Client: 接続直後の参加 Channel は 0
+   14. Client: Default Constructor の FD は -1
+   15. Client: Default Constructor は未登録
+
+[ 識別情報 ]  10 項目
+
+   16. Client: setNickname
+   17. Client: setNickname で hasNickname
+   18. Client: setNickname で上書き
+   19. Client: Nickname の表示名は正規化しない
+   20. Client: setNickname だけでは USER 未受信
+   21. Client: setUser の Username
+   22. Client: setUser の Realname
+   23. Client: setUser で hasUser
+   24. Client: Realname が空でも hasUser
+   25. Client: Realname が空
+
+[ 登録状態 ]  13 項目
+
+   26. Client: 何もなければ登録完了しない
+   27. Client: acceptPassword
+   28. Client: PASS だけでは登録完了しない
+   29. Client: PASS + NICK では登録完了しない
+   30. Client: 登録完了前は isRegistered が false
+   31. Client: PASS + NICK + USER で登録完了
+   32. Client: 登録完了後は isRegistered
+   33. Client: 2 回目の tryCompleteRegistration は false
+   34. Client: 2 回目以降も isRegistered は true
+   35. Client: PASS がなければ登録完了しない
+   36. Client: USER → NICK → PASS の順でも登録完了
+   37. Client: NICK + USER だけでは登録完了しない
+   38. Client: NICK + USER だけでは未登録
+
+[ 受信バッファ ]  11 項目
+
+   39. Client: appendReceiveBuffer
+   40. Client: appendReceiveBuffer は末尾へ追記
+   41. Client: eraseReceivePrefix で先頭を削除
+   42. Client: eraseReceivePrefix の過大な length は全削除
+   43. Client: 空バッファへの eraseReceivePrefix も安全
+   44. Client: NUL を含む受信データの長さ
+   45. Client: NUL を含む受信データの内容
+   46. Client: length で切り取る
+   47. Client: length 0 は何もしない
+   48. Client: NULL データは何もしない
+   49. Client: eraseReceivePrefix(0) は何もしない
+
+[ 送信バッファ ]  15 項目
+
+   50. Client: 初期状態は送信待ちなし
+   51. Client: appendSendBuffer で送信待ちあり
+   52. Client: getSendBuffer
+   53. Client: appendSendBuffer は順序を保つ
+   54. Client: eraseSendPrefix で送信済み分を削除
+   55. Client: 残りがあれば送信待ちのまま
+   56. Client: 全送信後の送信バッファは空
+   57. Client: 全送信後は送信待ちなし
+   58. Client: eraseSendPrefix の過大な length は全削除
+   59. Client: 全削除後は送信待ちなし
+   60. Client: 空バッファへの eraseSendPrefix も安全
+   61. Client: 空文字の追記では送信待ちにならない
+   62. Client: clearBuffers で受信バッファが空
+   63. Client: clearBuffers で送信バッファが空
+   64. Client: clearBuffers 後は送信待ちなし
+
+[ Channel 関係 ]  14 項目
+
+   65. Client: 未参加の Channel
+   66. Client: addJoinedChannel は追加時 true
+   67. Client: hasJoinedChannel
+   68. Client: 参加 Channel 数
+   69. Client: 重複 addJoinedChannel は false
+   70. Client: 重複追加しても Channel 数は増えない
+   71. Client: 2 つ目の Channel へ参加
+   72. Client: 参加 Channel 数は 2
+   73. Client: removeJoinedChannel は削除時 true
+   74. Client: 削除後は hasJoinedChannel が false
+   75. Client: 未参加 Channel の removeJoinedChannel は false
+   76. Client: 削除後の Channel 数
+   77. Client: 正規化前の名前では見つからない
+   78. Client: 正規化済みの名前で見つかる
+
+[ 値としてコピーできる (std::map<int, Client> 用) ]  6 項目
+
+   79. Client: コピーの FD
+   80. Client: コピーの Nickname
+   81. Client: コピーの PASS 状態
+   82. Client: コピーの参加 Channel
+   83. Client: コピーの送信バッファ
+   84. Client: コピー変更は元へ影響しない
+
+[ ネットワーク担当の利用フロー ]  5 項目
+
+   85. Client: 受信ループが有限回で終了する
+   86. Client: 分割受信を復元して 3 コマンドを完全に得る
+   87. Client: 受信フロー完了後のバッファは空
+   88. Client: 部分送信を繰り返して全送信できる
+   89. Client: 全送信後は送信待ちなし
+
+[ 登録順序の全 6 通り ]  3 項目
+
+   90. Client: 3 要素が揃う前は登録完了しない
+   91. Client: 任意の順序で 3 要素が揃えば登録完了
+   92. Client: 2 回目は false (Welcome 二重送信を防ぐ)
+
+[ 再実行と冪等性 ]  12 項目
+
+   93. Client: acceptPassword は冪等
+   94. Client: 2 回目の setUser で Username を上書き
+   95. Client: 2 回目の setUser で Realname を上書き
+   96. Client: 2 回目の setUser でも hasUser
+   97. Client: clearBuffers は登録状態を消さない
+   98. Client: clearBuffers は Nickname を消さない
+   99. Client: clearBuffers は参加 Channel を消さない
+  100. Client: clearBuffers は PASS 状態を消さない
+  101. Client: NUL を含む送信データの長さ
+  102. Client: NUL を含む送信データの内容
+  103. Client: 空文字追記は既存データを壊さない
+  104. Client: 空文字追記後も送信待ちのまま
+
+[ std::map<int, Client> への格納 ]  12 項目
+
+  105. Client: map 経由の FD
+  106. Client: map 経由の Hostname
+  107. Client: map 経由の Nickname
+  108. Client: map 経由の Username
+  109. Client: map 経由の Realname
+  110. Client: map 経由の PASS 状態
+  111. Client: map 経由の hasUser
+  112. Client: map 経由の登録状態
+  113. Client: map 経由の参加 Channel
+  114. Client: map 経由の受信バッファ
+  115. Client: map 経由の送信バッファ
+  116. Client: map 内での変更は元へ影響しない
