@@ -58,7 +58,8 @@ TARGET_SRCS = ../prd/domain/Client.cpp \
               ../prd/interface/Server.cpp \
               ../prd/interface/ServerRelations.cpp \
               ../prd/interface/ServerDispatch.cpp \
-              ../prd/handler/ServerAuthCommands.cpp
+              ../prd/handler/ServerAuthCommands.cpp \
+              ../prd/handler/ServerChannelCommands.cpp
 
 TEST_SRCS   = test_main.cpp \
               framework/TestRunner.cpp \
@@ -69,7 +70,8 @@ TEST_SRCS   = test_main.cpp \
               util/parser/test_parser.cpp \
               util/reply/test_reply.cpp \
               interface/dispatch/test_dispatch.cpp \
-              handler/auth/test_auth.cpp
+              handler/auth/test_auth.cpp \
+              handler/channel_cmd/test_channel_cmd.cpp
 
 SRCS        = $(TEST_SRCS) $(TARGET_SRCS)
 OBJS        = $(addprefix $(OBJDIR)/, $(notdir $(SRCS:.cpp=.o)))
@@ -88,7 +90,7 @@ HEADERS     = framework/TestRunner.hpp \
 vpath %.cpp . framework \
              domain/client domain/channel \
              util/ircutil util/bufferutil util/parser util/reply \
-             interface/dispatch handler/auth \
+             interface/dispatch handler/auth handler/channel_cmd \
              ../prd/domain ../prd/util ../prd/interface ../prd/handler
 
 all: test
@@ -129,6 +131,9 @@ test-dispatch: $(NAME)
 test-auth: $(NAME)
 	./$(NAME) auth
 
+test-channel-cmd: $(NAME)
+	./$(NAME) channel_cmd
+
 # アサーション失敗後も実行が続く作りのため、範囲外アクセスが
 # 潜んでいても静かに通ってしまう。それを検出する
 test-asan: fclean
@@ -162,6 +167,6 @@ fclean: clean
 re: fclean all
 
 .PHONY: all test test-ircutil test-bufferutil test-client test-channel \
-        test-parser test-reply test-dispatch test-auth test-asan mutation spec report \
-        clean fclean re
+        test-parser test-reply test-dispatch test-auth test-channel-cmd \
+        test-asan mutation spec report clean fclean re
 

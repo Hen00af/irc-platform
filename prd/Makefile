@@ -18,7 +18,8 @@ SRCS    = domain/Client.cpp \
           interface/Server.cpp \
           interface/ServerRelations.cpp \
           interface/ServerDispatch.cpp \
-          handler/ServerAuthCommands.cpp
+          handler/ServerAuthCommands.cpp \
+          handler/ServerChannelCommands.cpp
 
 HEADERS = domain/Client.hpp \
           domain/Channel.hpp \

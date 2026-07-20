@@ -83,6 +83,29 @@ private:
        集合で重複排除して 1 回だけ送る */
     void broadcastToSharedChannels(const Client &client,
                                    const std::string &message);
+    /* Channel の Member FD を走査して queue する。excludeFd == -1 なら
+       誰も除外しない (設計書 02 §4.9) */
+    void broadcastToChannel(const Channel &channel,
+                            const std::string &message, int excludeFd);
+
+    /* ── 所属関係 (設計書 02 §4.7) ──────────
+       joinChannel(): Channel へ Member FD を追加し、Client へ正規化
+       Channel 名を追加する。存在確認は Handler が Channel 生成も含めて
+       済ませている前提。Client か Channel が不在なら false
+       leaveChannel(): 通知文字列を先に組み立て、sendPart なら削除前の
+       全 Member (退出 Client 自身を含む) へ PART 通知を broadcast した
+       あとに Member/Operator/Invite/所属を削除する。Channel が空になれば
+       削除する。Client 未参加なら false で何もしない */
+    bool joinChannel(int clientFd, const std::string &channelKey);
+    bool leaveChannel(int clientFd, const std::string &channelKey,
+                      const std::string &reason, bool sendPart);
+    /* Channel が空になった時点で Map から削除する (設計書 02 §4.7) */
+    void deleteChannelIfEmpty(const std::string &channelKey);
+
+    /* ── 共通検証 (設計書 04 §4) ────────────
+       非 Member / 非 Operator なら該当 Numeric を queue して false */
+    bool requireChannelMember(int fd, const Channel &channel);
+    bool requireChannelOperator(int fd, const Channel &channel);
 
     /* ── 登録 (設計書 04 §5) ────────────────
        PASS/NICK/USER の各 Handler の最後で呼ぶ。この呼び出しで初めて

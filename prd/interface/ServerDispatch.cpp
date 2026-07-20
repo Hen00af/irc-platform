@@ -88,15 +88,10 @@ void Server::dispatchCommand(int fd, const Message &message)
  * Handler スタブ (設計書 02 §4.10)
  *
  * 認証系 (PASS/NICK/USER/CAP/PING/PONG) は handler/
- * ServerAuthCommands.cpp に実装済み。残りはチャンネル系・MODE の
- * 実装タスクで置き換える。
+ * ServerAuthCommands.cpp に実装済み。JOIN/PART は handler/
+ * ServerChannelCommands.cpp に実装済み。残りはメッセージ系・KICK/
+ * INVITE/TOPIC/QUIT・MODE の実装タスクで置き換える。
  * ============================================================ */
-
-void Server::handleJoin(int fd, const Message &message)
-{
-    (void)fd;
-    (void)message;
-}
 
 void Server::handlePrivmsg(int fd, const Message &message)
 {
@@ -129,12 +124,6 @@ void Server::handleMode(int fd, const Message &message)
 }
 
 void Server::handleQuit(int fd, const Message &message)
-{
-    (void)fd;
-    (void)message;
-}
-
-void Server::handlePart(int fd, const Message &message)
 {
     (void)fd;
     (void)message;

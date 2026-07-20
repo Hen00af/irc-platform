@@ -212,13 +212,15 @@ void runDispatchTests()
             { "PING", ":ircserv.local 409 alice :No origin specified\r\n" },
             { "PONG", "" },
             { "QUIT", "" },
-            { "JOIN", "" },
+            { "JOIN",
+              ":ircserv.local 461 alice JOIN :Not enough parameters\r\n" },
             { "PRIVMSG", "" },
             { "KICK", "" },
             { "INVITE", "" },
             { "TOPIC", "" },
             { "MODE", "" },
-            { "PART", "" },
+            { "PART",
+              ":ircserv.local 461 alice PART :Not enough parameters\r\n" },
         };
         static const std::size_t caseCount =
             sizeof(cases) / sizeof(cases[0]);
