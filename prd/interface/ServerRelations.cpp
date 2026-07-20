@@ -218,6 +218,108 @@ void Server::deleteChannelIfEmpty(const std::string &channelKey)
         _channels.erase(channel->getKeyName());
 }
 
+void Server::removeClientFromAllChannels(int                clientFd,
+                                         const std::string &quitMessage)
+{
+    /* QUIT 通知は disconnectClient() が事前に broadcastToSharedChannels()
+       で送信済み。ここでは Channel 側の関係整理だけを行う (設計書 03
+       §18 手順 6〜9) */
+    (void)quitMessage;
+
+    Client *client = findClientByFd(clientFd);
+
+    if (client == NULL)
+        return;
+
+    /* 参加中 Channel 名をコピーしてから走査する。ループ内で
+       Client::removeJoinedChannel() が _joinedChannels を変更するため、
+       コピーを使わないと Iterator が無効化される (本 spec の決定事項) */
+    std::set<std::string> joined = client->getJoinedChannels();
+
+    for (std::set<std::string>::const_iterator it = joined.begin();
+         it != joined.end(); ++it)
+    {
+        Channel *channel = findChannel(*it);
+
+        if (channel == NULL)
+            continue;
+        /* Channel::removeMember() は不変条件「Operator は必ず Member」
+           を保つため Operator 集合からも同時に削除する */
+        channel->removeMember(clientFd);
+        client->removeJoinedChannel(*it);
+        deleteChannelIfEmpty(*it);
+    }
+
+    /* Client は参加していない Channel からも Invite され得るため、
+       残っている全 Channel の Invite 集合から FD を削除する (設計書 03
+       §18 手順 7) */
+    for (std::map<std::string, Channel>::iterator cit = _channels.begin();
+         cit != _channels.end(); ++cit)
+        cit->second.removeInvite(clientFd);
+}
+
+/* ── 切断 (設計書 03 §17〜§18) ──────────────── */
+
+void Server::scheduleDisconnect(int fd)
+{
+    /* 同じ FD が複数原因 (QUIT / recv エラーなど) で予約されても Set に
+       より 1 回だけ処理される (設計書 03 §17) */
+    _pendingDisconnects.insert(fd);
+}
+
+void Server::processPendingDisconnects()
+{
+    /* Set をコピーしてから Member を空にする。disconnectClient() の中で
+       _pendingDisconnects が再度変更されても (通常は起きない) 今回の
+       走査には影響しない (設計書 03 §17) */
+    std::set<int> pending = _pendingDisconnects;
+
+    _pendingDisconnects.clear();
+    for (std::set<int>::const_iterator it = pending.begin();
+         it != pending.end(); ++it)
+    {
+        std::map<int, std::string>::const_iterator reasonIt =
+            _disconnectReasons.find(*it);
+        std::string reason = (reasonIt != _disconnectReasons.end())
+                                  ? reasonIt->second
+                                  : "Connection closed";
+
+        disconnectClient(*it, reason);
+    }
+}
+
+void Server::disconnectClient(int fd, const std::string &reason)
+{
+    Client *client = findClientByFd(fd);
+
+    if (client == NULL)
+        return;
+
+    /* 共有 Channel の他 Member へ QUIT 通知を 1 回だけ queue する。
+       broadcastToSharedChannels() は client 自身を除外し、複数 Channel
+       共有時も FD 集合の重複排除で 1 回だけ送る (設計書 03 §18 手順
+       2〜5) */
+    std::string notice = Reply::command(
+        Reply::clientPrefix(*client), "QUIT", ":" + reason);
+
+    broadcastToSharedChannels(*client, notice);
+
+    /* Channel 関係 (Member/Operator/Invite/参加集合) の整理と空 Channel
+       の削除 (設計書 03 §18 手順 6〜9) */
+    removeClientFromAllChannels(fd, reason);
+
+    /* Nickname 索引の削除 (設計書 03 §18 手順 10)。pollfd 一覧からの
+       削除 (手順 11) と close(fd) (手順 12) は FD をまだ所有しないため
+       行わない。ネットワーク層の実装時に追加すること */
+    if (!client->getNickname().empty())
+        unregisterNickname(client->getNickname());
+
+    /* _disconnectReasons の該当エントリと Client Map から削除する
+       (設計書 03 §18 手順 13、本 spec の決定事項で理由 Map も削除) */
+    _disconnectReasons.erase(fd);
+    _clients.erase(fd);
+}
+
 /* ── 共通検証 (設計書 04 §4) ────────────────── */
 
 bool Server::requireChannelMember(int fd, const Channel &channel)

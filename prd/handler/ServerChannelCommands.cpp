@@ -10,11 +10,11 @@
 #include "../util/Reply.hpp"
 
 /* ============================================================
- * チャンネル系 Command Handler (設計書 04 §10, §12, §13, §14, §15)
+ * チャンネル系 Command Handler (設計書 04 §10, §12, §13, §14, §15, §16)
  *
- * JOIN / PART / KICK / INVITE / TOPIC を実装する。所属関係の更新は
- * Server::joinChannel() / Server::leaveChannel() (ServerRelations.cpp)
- * に委譲する。
+ * JOIN / PART / KICK / INVITE / TOPIC / QUIT を実装する。所属関係の
+ * 更新は Server::joinChannel() / Server::leaveChannel() / Server::
+ * removeClientFromAllChannels() (ServerRelations.cpp) に委譲する。
  * ============================================================ */
 
 /* ── JOIN (設計書 04 §10) ───────────────── */
@@ -384,4 +384,24 @@ void Server::handleTopic(int fd, const Message &message)
         channel->getName() + " :" + topic);
 
     broadcastToChannel(*channel, notice, -1);
+}
+
+/* ── QUIT (設計書 04 §16) ───────────────── */
+
+void Server::handleQuit(int fd, const Message &message)
+{
+    Client *client = findClientByFd(fd);
+
+    if (client == NULL)
+        return;
+
+    /* message 省略時は "Client Quit" (設計書 04 §16) */
+    std::string reason =
+        (!message.params.empty()) ? message.params[0] : "Client Quit";
+
+    /* disconnectClient() を即時実行せず、理由を保存して切断予約する
+       だけに留める。通知・関係削除・削除は processPendingDisconnects()
+       → disconnectClient() が後で行う (設計書 04 §16, 03 §17〜§18) */
+    _disconnectReasons[fd] = reason;
+    scheduleDisconnect(fd);
 }

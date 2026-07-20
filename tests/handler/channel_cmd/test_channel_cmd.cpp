@@ -922,4 +922,123 @@ void runChannelCmdTests()
         ASSERT_EQ("TOPIC: 空 topic 削除後の照会は 331", takeOutput(server, 3),
                   ":ircserv.local 331 alice #g :No topic is set\r\n");
     }
+
+    /* ── QUIT: 予約時点では Client がまだ残存する ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        registerUser(server, 4, "bob", "10.0.0.1");
+        dispatchLine(server, 3, "JOIN #g");
+        dispatchLine(server, 4, "JOIN #g");
+        takeOutput(server, 3);
+        takeOutput(server, 4);
+
+        dispatchLine(server, 3, "QUIT :bye");
+        ASSERT_EQ("QUIT: processPendingDisconnects 前は誰にも通知されない",
+                  takeOutput(server, 4), "");
+        ASSERT_TRUE("QUIT: 予約時点では Client がまだ残存する",
+                    server.findClientByFd(3) != NULL);
+        ASSERT_TRUE("QUIT: 予約時点では Channel からも削除されていない",
+                    server.findChannel("#g")->hasMember(3));
+    }
+
+    /* ── QUIT: processPendingDisconnects 後、共有 Member へ通知1回・
+       自分へは無し・Client/索引/Channel 関係が消える・空 Channel 削除 ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        registerUser(server, 4, "bob", "10.0.0.1");
+        dispatchLine(server, 3, "JOIN #g");
+        dispatchLine(server, 4, "JOIN #g");
+        takeOutput(server, 3);
+        takeOutput(server, 4);
+
+        dispatchLine(server, 3, "QUIT :bye");
+        takeOutput(server, 4);
+        server.processPendingDisconnects();
+        ASSERT_EQ("QUIT: 共有 Member (bob) へ QUIT 通知が 1 回届く",
+                  takeOutput(server, 4),
+                  ":alice!u@127.0.0.1 QUIT :bye\r\n");
+        ASSERT_TRUE("QUIT: Client Map から削除される",
+                    server.findClientByFd(3) == NULL);
+        ASSERT_TRUE("QUIT: Nickname 索引から削除される (別 fd で再利用可)",
+                    server.findClientByNickname("alice") == NULL);
+        ASSERT_TRUE("QUIT: 残った Channel から Member 関係も消える",
+                    !server.findChannel("#g")->hasMember(3));
+    }
+
+    /* ── QUIT: 全 Member が退出すると Channel が削除される ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #solo");
+        takeOutput(server, 3);
+
+        dispatchLine(server, 3, "QUIT");
+        server.processPendingDisconnects();
+        ASSERT_TRUE("QUIT: 最後の Member 退出で空 Channel が削除される",
+                    server.findChannel("#solo") == NULL);
+    }
+
+    /* ── QUIT: message 省略時は "Client Quit" ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        registerUser(server, 4, "bob", "10.0.0.1");
+        dispatchLine(server, 3, "JOIN #g");
+        dispatchLine(server, 4, "JOIN #g");
+        takeOutput(server, 3);
+        takeOutput(server, 4);
+
+        dispatchLine(server, 3, "QUIT");
+        server.processPendingDisconnects();
+        ASSERT_EQ("QUIT: message 省略時は \"Client Quit\"",
+                  takeOutput(server, 4),
+                  ":alice!u@127.0.0.1 QUIT :Client Quit\r\n");
+    }
+
+    /* ── QUIT: 複数 Channel を共有していても通知は 1 回だけ ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        registerUser(server, 4, "bob", "10.0.0.1");
+        dispatchLine(server, 3, "JOIN #g1,#g2");
+        dispatchLine(server, 4, "JOIN #g1,#g2");
+        takeOutput(server, 3);
+        takeOutput(server, 4);
+
+        dispatchLine(server, 3, "QUIT :bye");
+        server.processPendingDisconnects();
+        ASSERT_EQ("QUIT: 複数 Channel 共有でも通知は 1 回だけ",
+                  takeOutput(server, 4),
+                  ":alice!u@127.0.0.1 QUIT :bye\r\n");
+    }
+
+    /* ── QUIT: _disconnectReasons がリークせず、同じ fd の再利用も
+       クリーンに動く ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "QUIT :first");
+        server.processPendingDisconnects();
+
+        registerUser(server, 3, "carol", "10.0.0.3");
+        dispatchLine(server, 3, "QUIT");
+        server.processPendingDisconnects();
+        ASSERT_TRUE("QUIT: 同じ fd を再利用しても新しい Client として動く"
+                    " (理由 Map がリークしていない)",
+                    server.findClientByFd(3) == NULL);
+    }
 }

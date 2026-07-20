@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <set>
 #include <string>
 
 #include "../domain/Channel.hpp"
@@ -14,8 +15,8 @@
  *
  * 移行期の骨格である。ネットワーク層 (listen socket・poll ループ・
  * ServerNetwork.cpp) はまだ持たない。設計書 02 §4.2 のうち未使用の
- * メンバ (_listenFd, _running, _pollFds, _pendingDisconnects) は、
- * それらを使う層の実装時に追加する。設計書 02 §4.3 の Destructor
+ * メンバ (_listenFd, _running, _pollFds) は、それらを使う層の実装時に
+ * 追加する。設計書 02 §4.3 の Destructor
  * (全 Client FD と _listenFd の close) も同時に追加すること。現状は
  * FD を所有しないため Default の Destructor で正しい。
  * ============================================================ */
@@ -65,6 +66,15 @@ public:
        FD が不在なら何もしない */
     void dispatchCommand(int fd, const Message &message);
 
+    /* ── 切断予約の処理 (設計書 03 §17) ──────
+       ネットワーク層のイベントループ末尾から呼ぶ想定。設計書 02 §4.5
+       では private だが、poll ループ実装前にテストから駆動できるよう
+       public にする (spec の決定事項)。_pendingDisconnects をコピーして
+       Member を空にしてから各 FD を disconnectClient() へ渡す。理由は
+       _disconnectReasons に保存済みならそれを、無ければ
+       "Connection closed" を使う */
+    void processPendingDisconnects();
+
 private:
     typedef void (Server::*CommandHandler)(int fd, const Message &message);
 
@@ -101,6 +111,28 @@ private:
                       const std::string &reason, bool sendPart);
     /* Channel が空になった時点で Map から削除する (設計書 02 §4.7) */
     void deleteChannelIfEmpty(const std::string &channelKey);
+    /* disconnectClient() から呼ばれる、Channel 側の関係整理だけを行う
+       部分 (設計書 02 §4.7, 03 §18 手順 6〜9)。参加中 Channel 名を
+       コピーしてから走査し (removeJoinedChannel() で集合を変更するため
+       Iterator 無効化を避ける)、各 Channel から Member/Operator を削除
+       して空なら削除する。Client は Channel に参加していなくても Invite
+       され得るため、Invite 集合の削除は参加中に限らず全 Channel を対象
+       にする。QUIT 通知は disconnectClient() が事前に broadcast 済み
+       のため、quitMessage はここでは使わない */
+    void removeClientFromAllChannels(int clientFd,
+                                     const std::string &quitMessage);
+
+    /* ── 切断 (設計書 03 §17〜§18) ──────────
+       scheduleDisconnect(): 同じ FD が複数原因で予約されても Set により
+       1 回だけ処理される (設計書 03 §17)。
+       disconnectClient(): Client 確認 → QUIT 通知生成・共有 Member への
+       queue → removeClientFromAllChannels() で Channel 関係を整理 →
+       Nickname 索引・_disconnectReasons・Client Map から削除、の順序で
+       行う (設計書 03 §18)。pollfd 一覧からの削除 (手順 11) と close(fd)
+       (手順 12) は FD をまだ所有しないため行わない。ネットワーク層の
+       実装時に追加すること */
+    void scheduleDisconnect(int fd);
+    void disconnectClient(int fd, const std::string &reason);
 
     /* ── 共通検証 (設計書 04 §4) ────────────
        非 Member / 非 Operator なら該当 Numeric を queue して false */
@@ -142,4 +174,8 @@ private:
     std::map<std::string, Channel> _channels;  /* 正規化名 → Channel (02 §4.2) */
     std::map<std::string, int>     _nickToFd;  /* 正規化 Nick → FD (02 §4.2) */
     std::string                    _serverStartTime; /* 003 用 (06 §6) */
+    std::set<int>              _pendingDisconnects; /* 切断予約 FD (02 §4.2) */
+    std::map<int, std::string> _disconnectReasons;  /* FD → QUIT 理由。
+        04 §16 の「理由を保存して切断予約する」と 03 §17 の固定文言
+        "Connection closed" を両立させるための Map (本 spec の決定事項) */
 };
