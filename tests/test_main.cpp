@@ -10,6 +10,7 @@ void runClientTests();
 void runChannelTests();
 void runParserTests();
 void runReplyTests();
+void runDispatchTests();
 
 /* ============================================================
  * 単体テストの実行本体。
@@ -56,12 +57,17 @@ int main(int argc, char **argv)
         runReplyTests();
         ran = true;
     }
+    if (all || suite == "dispatch")
+    {
+        runDispatchTests();
+        ran = true;
+    }
 
     if (!ran)
     {
         std::cerr << "Unknown suite: " << suite << std::endl;
         std::cerr << "Usage: " << argv[0]
-                  << " [all|ircutil|bufferutil|client|channel|parser|reply]" << std::endl;
+                  << " [all|ircutil|bufferutil|client|channel|parser|reply|dispatch]" << std::endl;
         return 1;
     }
     return TestRunner::summary();

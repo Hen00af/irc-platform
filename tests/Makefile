@@ -54,7 +54,10 @@ TARGET_SRCS = ../prd/domain/Client.cpp \
               ../prd/util/IrcUtil.cpp \
               ../prd/util/BufferUtil.cpp \
               ../prd/util/Parser.cpp \
-              ../prd/util/Reply.cpp
+              ../prd/util/Reply.cpp \
+              ../prd/interface/Server.cpp \
+              ../prd/interface/ServerRelations.cpp \
+              ../prd/interface/ServerDispatch.cpp
 
 TEST_SRCS   = test_main.cpp \
               framework/TestRunner.cpp \
@@ -63,7 +66,8 @@ TEST_SRCS   = test_main.cpp \
               util/ircutil/test_ircutil.cpp \
               util/bufferutil/test_bufferutil.cpp \
               util/parser/test_parser.cpp \
-              util/reply/test_reply.cpp
+              util/reply/test_reply.cpp \
+              interface/dispatch/test_dispatch.cpp
 
 SRCS        = $(TEST_SRCS) $(TARGET_SRCS)
 OBJS        = $(addprefix $(OBJDIR)/, $(notdir $(SRCS:.cpp=.o)))
@@ -76,12 +80,14 @@ HEADERS     = framework/TestRunner.hpp \
               ../prd/util/BufferUtil.hpp \
               ../prd/util/Parser.hpp \
               ../prd/util/Numerics.hpp \
-              ../prd/util/Reply.hpp
+              ../prd/util/Reply.hpp \
+              ../prd/interface/Server.hpp
 
 vpath %.cpp . framework \
              domain/client domain/channel \
              util/ircutil util/bufferutil util/parser util/reply \
-             ../prd/domain ../prd/util
+             interface/dispatch \
+             ../prd/domain ../prd/util ../prd/interface
 
 all: test
 
@@ -114,6 +120,9 @@ test-parser: $(NAME)
 
 test-reply: $(NAME)
 	./$(NAME) reply
+
+test-dispatch: $(NAME)
+	./$(NAME) dispatch
 
 # アサーション失敗後も実行が続く作りのため、範囲外アクセスが
 # 潜んでいても静かに通ってしまう。それを検出する
@@ -148,6 +157,6 @@ fclean: clean
 re: fclean all
 
 .PHONY: all test test-ircutil test-bufferutil test-client test-channel \
-        test-parser test-reply test-asan mutation spec report \
+        test-parser test-reply test-dispatch test-asan mutation spec report \
         clean fclean re
 
