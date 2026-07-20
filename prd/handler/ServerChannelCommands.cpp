@@ -59,10 +59,7 @@ void Server::handleJoin(int fd, const Message &message)
 
         if (!IrcUtil::isValidChannelName(channelName))
         {
-            queueToClient(fd, Reply::numeric(_serverName, *client,
-                                             Numeric::ERR_NOSUCHCHANNEL,
-                                             channelName
-                                                 + " :No such channel"));
+            sendNoSuchChannel(fd, *client, channelName);
             continue;
         }
 
@@ -114,7 +111,13 @@ void Server::handleJoin(int fd, const Message &message)
 
         /* 双方向追加 → 新規なら Operator 追加 → Invite 消費
            (設計書 04 §10 の順序) */
-        joinChannel(fd, normalizedKey);
+        if (!joinChannel(fd, normalizedKey))
+        {
+            /* 現行の不変条件では到達しないが、失敗時に新規挿入した
+               Channel が Member 不在のまま残る (孤児 Channel) のを防ぐ */
+            deleteChannelIfEmpty(normalizedKey);
+            continue;
+        }
         if (created)
             channel->addOperator(fd);
         channel->removeInvite(fd);
@@ -191,10 +194,7 @@ void Server::handlePart(int fd, const Message &message)
 
         if (channel == NULL)
         {
-            queueToClient(fd, Reply::numeric(_serverName, *client,
-                                             Numeric::ERR_NOSUCHCHANNEL,
-                                             channelName
-                                                 + " :No such channel"));
+            sendNoSuchChannel(fd, *client, channelName);
             continue;
         }
         if (!requireChannelMember(fd, *channel))
@@ -220,9 +220,7 @@ void Server::handleKick(int fd, const Message &message)
 
     if (channel == NULL)
     {
-        queueToClient(fd, Reply::numeric(_serverName, *client,
-                                         Numeric::ERR_NOSUCHCHANNEL,
-                                         channelName + " :No such channel"));
+        sendNoSuchChannel(fd, *client, channelName);
         return;
     }
     /* 実行者が Member であること → Operator であることの順に確認する
@@ -297,9 +295,7 @@ void Server::handleInvite(int fd, const Message &message)
 
     if (channel == NULL)
     {
-        queueToClient(fd, Reply::numeric(_serverName, *client,
-                                         Numeric::ERR_NOSUCHCHANNEL,
-                                         channelName + " :No such channel"));
+        sendNoSuchChannel(fd, *client, channelName);
         return;
     }
     /* 課題文でOperator固有Commandとして指定されているため、Channel Mode
@@ -346,9 +342,7 @@ void Server::handleTopic(int fd, const Message &message)
 
     if (channel == NULL)
     {
-        queueToClient(fd, Reply::numeric(_serverName, *client,
-                                         Numeric::ERR_NOSUCHCHANNEL,
-                                         channelName + " :No such channel"));
+        sendNoSuchChannel(fd, *client, channelName);
         return;
     }
     if (!requireChannelMember(fd, *channel))

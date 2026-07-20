@@ -139,6 +139,12 @@ private:
     bool requireChannelMember(int fd, const Channel &channel);
     bool requireChannelOperator(int fd, const Channel &channel);
 
+    /* 403 ERR_NOSUCHCHANNEL を queue する共通 Helper (設計書 06 §8)。
+       JOIN/PART/KICK/INVITE/TOPIC/PRIVMSG で重複していた本文を集約する。
+       channelName は各呼び出し元が受け取った表示名をそのまま使う */
+    void sendNoSuchChannel(int fd, const Client &client,
+                           const std::string &channelName);
+
     /* ── 登録 (設計書 04 §5) ────────────────
        PASS/NICK/USER の各 Handler の最後で呼ぶ。この呼び出しで初めて
        登録完了したときだけ Welcome Sequence を送る */

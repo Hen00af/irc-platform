@@ -55,9 +55,7 @@ void Server::handlePrivmsg(int fd, const Message &message)
 
             if (channel == NULL)
             {
-                queueToClient(fd, Reply::numeric(
-                    _serverName, *client, Numeric::ERR_NOSUCHCHANNEL,
-                    target + " :No such channel"));
+                sendNoSuchChannel(fd, *client, target);
                 continue;
             }
             if (!channel->hasMember(fd))

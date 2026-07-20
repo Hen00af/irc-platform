@@ -351,3 +351,11 @@ bool Server::requireChannelOperator(int fd, const Channel &channel)
                                              + " :You're not channel operator"));
     return false;
 }
+
+void Server::sendNoSuchChannel(int fd, const Client &client,
+                               const std::string &channelName)
+{
+    queueToClient(fd, Reply::numeric(_serverName, client,
+                                     Numeric::ERR_NOSUCHCHANNEL,
+                                     channelName + " :No such channel"));
+}
