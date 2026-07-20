@@ -122,6 +122,7 @@ test-reply: $(NAME)
 
 test-dispatch: $(NAME)
 	./$(NAME) dispatch
+
 # アサーション失敗後も実行が続く作りのため、範囲外アクセスが
 # 潜んでいても静かに通ってしまう。それを検出する
 test-asan: fclean
@@ -155,6 +156,6 @@ fclean: clean
 re: fclean all
 
 .PHONY: all test test-ircutil test-bufferutil test-client test-channel \
-        test-parser test-reply test-asan mutation spec report \
+        test-parser test-reply test-dispatch test-asan mutation spec report \
         clean fclean re
 
