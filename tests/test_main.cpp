@@ -13,6 +13,7 @@ void runReplyTests();
 void runDispatchTests();
 void runAuthTests();
 void runChannelCmdTests();
+void runModeTests();
 
 /* ============================================================
  * 単体テストの実行本体。
@@ -74,12 +75,17 @@ int main(int argc, char **argv)
         runChannelCmdTests();
         ran = true;
     }
+    if (all || suite == "mode")
+    {
+        runModeTests();
+        ran = true;
+    }
 
     if (!ran)
     {
         std::cerr << "Unknown suite: " << suite << std::endl;
         std::cerr << "Usage: " << argv[0]
-                  << " [all|ircutil|bufferutil|client|channel|parser|reply|dispatch|auth|channel_cmd]" << std::endl;
+                  << " [all|ircutil|bufferutil|client|channel|parser|reply|dispatch|auth|channel_cmd|mode]" << std::endl;
         return 1;
     }
     return TestRunner::summary();
