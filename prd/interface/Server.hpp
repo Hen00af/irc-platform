@@ -15,7 +15,9 @@
  * ServerNetwork.cpp) と Channel・Nickname 索引はまだ持たない。
  * 設計書 02 §4.2 のうち未使用のメンバ (_listenFd, _running, _pollFds,
  * _channels, _nickToFd, _pendingDisconnects) は、それらを使う層の
- * 実装時に追加する。
+ * 実装時に追加する。設計書 02 §4.3 の Destructor (全 Client FD と
+ * _listenFd の close) も同時に追加すること。現状は FD を所有しないため
+ * Default の Destructor で正しい。
  * ============================================================ */
 class Server
 {
