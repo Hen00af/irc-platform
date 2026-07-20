@@ -20,10 +20,16 @@
 ## ファイル構成 (設計書02 §12 に準拠)
 
 ```
-prd/interface/Server.hpp          Server クラス宣言
-prd/interface/ServerDispatch.cpp  dispatchCommand + 表 + スタブハンドラ
+prd/interface/Server.hpp           Server クラス宣言
+prd/interface/Server.cpp           Constructor
+prd/interface/ServerRelations.cpp  addClient / removeClient /
+                                   findClientByFd / queueToClient
+prd/interface/ServerDispatch.cpp   dispatchCommand + 表 + スタブハンドラ
 tests/interface/dispatch/test_dispatch.cpp
 ```
+
+メソッドの配置は設計書02 §12 のファイル分担 (Server.cpp / ServerRelations.cpp
+/ ServerDispatch.cpp) に従う。
 
 `prd/Makefile` の SRCS へ `interface/ServerDispatch.cpp` を追加する。
 main() が無い移行期のため `all: $(OBJS)` は維持する。
