@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -20,6 +21,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build unit tests
-        run: make -C tests
+        run: make -C tests run_tests
       - name: Run unit tests
-        run: make -C tests run
+        run: make -C tests test
