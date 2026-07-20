@@ -222,7 +222,8 @@ void runDispatchTests()
               ":ircserv.local 461 alice INVITE :Not enough parameters\r\n" },
             { "TOPIC",
               ":ircserv.local 461 alice TOPIC :Not enough parameters\r\n" },
-            { "MODE", "" },
+            { "MODE",
+              ":ircserv.local 461 alice MODE :Not enough parameters\r\n" },
             { "PART",
               ":ircserv.local 461 alice PART :Not enough parameters\r\n" },
         };
