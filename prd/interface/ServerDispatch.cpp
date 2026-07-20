@@ -87,26 +87,10 @@ void Server::dispatchCommand(int fd, const Message &message)
 /* ============================================================
  * Handler スタブ (設計書 02 §4.10)
  *
- * handler/ 配下の実装タスクで順次置き換える。
+ * 認証系 (PASS/NICK/USER/CAP/PING/PONG) は handler/
+ * ServerAuthCommands.cpp に実装済み。残りはチャンネル系・MODE の
+ * 実装タスクで置き換える。
  * ============================================================ */
-
-void Server::handlePass(int fd, const Message &message)
-{
-    (void)fd;
-    (void)message;
-}
-
-void Server::handleNick(int fd, const Message &message)
-{
-    (void)fd;
-    (void)message;
-}
-
-void Server::handleUser(int fd, const Message &message)
-{
-    (void)fd;
-    (void)message;
-}
 
 void Server::handleJoin(int fd, const Message &message)
 {
@@ -144,18 +128,6 @@ void Server::handleMode(int fd, const Message &message)
     (void)message;
 }
 
-void Server::handlePing(int fd, const Message &message)
-{
-    (void)fd;
-    (void)message;
-}
-
-void Server::handlePong(int fd, const Message &message)
-{
-    (void)fd;
-    (void)message;
-}
-
 void Server::handleQuit(int fd, const Message &message)
 {
     (void)fd;
@@ -163,12 +135,6 @@ void Server::handleQuit(int fd, const Message &message)
 }
 
 void Server::handlePart(int fd, const Message &message)
-{
-    (void)fd;
-    (void)message;
-}
-
-void Server::handleCap(int fd, const Message &message)
 {
     (void)fd;
     (void)message;

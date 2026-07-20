@@ -108,23 +108,39 @@ void runDispatchTests()
 
     {
         /* 登録前に許可される Command はゲートを通過する
-           (スタブ到達 = Numeric が積まれない) */
-        const char *commands[] = { "PASS", "NICK", "USER", "CAP", "PING",
-                                   "PONG", "QUIT" };
+           (no parameters で dispatched) */
+        struct CommandExpected
+        {
+            const char *command;
+            const char *expected;
+        };
+        static const CommandExpected cases[] = {
+            { "PASS",
+              ":ircserv.local 461 * PASS :Not enough parameters\r\n" },
+            { "NICK", ":ircserv.local 431 * :No nickname given\r\n" },
+            { "USER",
+              ":ircserv.local 461 * USER :Not enough parameters\r\n" },
+            { "CAP", "" },
+            { "PING", ":ircserv.local 409 * :No origin specified\r\n" },
+            { "PONG", "" },
+            { "QUIT", "" },
+        };
+        static const std::size_t caseCount =
+            sizeof(cases) / sizeof(cases[0]);
 
-        for (std::size_t i = 0; i < sizeof(commands) / sizeof(commands[0]);
-             ++i)
+        for (std::size_t i = 0; i < caseCount; ++i)
         {
             Server  server(6667, "pass");
             Message message;
 
             server.addClient(3, "127.0.0.1");
-            message.command = commands[i];
+            message.command = cases[i].command;
             server.dispatchCommand(3, message);
 
-            ASSERT_EQ(std::string("Dispatch: 未登録 ") + commands[i]
-                          + " はゲート通過",
-                      server.findClientByFd(3)->getSendBuffer(), "");
+            ASSERT_EQ(std::string("Dispatch: 未登録 ") + cases[i].command +
+                          " はゲート通過",
+                      server.findClientByFd(3)->getSendBuffer(),
+                      cases[i].expected);
         }
     }
 
@@ -183,25 +199,44 @@ void runDispatchTests()
     }
 
     {
-        /* 登録後の通常 Command はゲートを通過する */
-        const char *commands[] = { "NICK", "CAP", "PING", "PONG", "QUIT",
-                                   "JOIN", "PRIVMSG", "KICK", "INVITE",
-                                   "TOPIC", "MODE", "PART" };
+        /* 登録後の通常 Command はゲートを通過する
+           (no parameters で dispatched) */
+        struct CommandExpected
+        {
+            const char *command;
+            const char *expected;
+        };
+        static const CommandExpected cases[] = {
+            { "NICK", ":ircserv.local 431 alice :No nickname given\r\n" },
+            { "CAP", "" },
+            { "PING", ":ircserv.local 409 alice :No origin specified\r\n" },
+            { "PONG", "" },
+            { "QUIT", "" },
+            { "JOIN", "" },
+            { "PRIVMSG", "" },
+            { "KICK", "" },
+            { "INVITE", "" },
+            { "TOPIC", "" },
+            { "MODE", "" },
+            { "PART", "" },
+        };
+        static const std::size_t caseCount =
+            sizeof(cases) / sizeof(cases[0]);
 
-        for (std::size_t i = 0; i < sizeof(commands) / sizeof(commands[0]);
-             ++i)
+        for (std::size_t i = 0; i < caseCount; ++i)
         {
             Server  server(6667, "pass");
             Message message;
 
             server.addClient(3, "127.0.0.1");
             registerClient(server, 3, "alice");
-            message.command = commands[i];
+            message.command = cases[i].command;
             server.dispatchCommand(3, message);
 
-            ASSERT_EQ(std::string("Dispatch: 登録済み ") + commands[i]
-                          + " はゲート通過",
-                      server.findClientByFd(3)->getSendBuffer(), "");
+            ASSERT_EQ(std::string("Dispatch: 登録済み ") + cases[i].command +
+                          " はゲート通過",
+                      server.findClientByFd(3)->getSendBuffer(),
+                      cases[i].expected);
         }
     }
 
