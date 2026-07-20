@@ -56,7 +56,8 @@ TARGET_SRCS = ../prd/domain/Client.cpp \
               ../prd/util/Parser.cpp \
               ../prd/util/Reply.cpp \
               ../prd/interface/Server.cpp \
-              ../prd/interface/ServerRelations.cpp
+              ../prd/interface/ServerRelations.cpp \
+              ../prd/interface/ServerDispatch.cpp
 
 TEST_SRCS   = test_main.cpp \
               framework/TestRunner.cpp \

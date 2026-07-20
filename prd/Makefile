@@ -15,7 +15,10 @@ SRCS    = domain/Client.cpp \
           util/BufferUtil.cpp \
           util/IrcUtil.cpp \
           util/Parser.cpp \
-          util/Reply.cpp
+          util/Reply.cpp \
+          interface/Server.cpp \
+          interface/ServerRelations.cpp \
+          interface/ServerDispatch.cpp
 
 HEADERS = domain/Client.hpp \
           domain/Channel.hpp \
@@ -24,7 +27,8 @@ HEADERS = domain/Client.hpp \
           util/IrcUtil.hpp \
           util/Parser.hpp \
           util/Numerics.hpp \
-          util/Reply.hpp
+          util/Reply.hpp \
+          interface/Server.hpp
 
 OBJS    = $(SRCS:.cpp=.o)
 
