@@ -108,48 +108,39 @@ void runDispatchTests()
 
     {
         /* 登録前に許可される Command はゲートを通過する
-           (実装済み Command Handler は動作する) */
-        const char   *commands[] = { "PASS", "NICK", "USER", "CAP", "PING",
-                                     "PONG", "QUIT" };
-        const char   *params_setup[] = { "pass", "alice", "u 0 * :Real",
-                                         "LS", "tok", "", "" };
-        std::size_t   param_sizes[] = { 1, 1, 4, 1, 1, 0, 0 };
+           (no parameters で dispatched) */
+        struct CommandExpected
+        {
+            const char *command;
+            const char *expected;
+        };
+        static const CommandExpected cases[] = {
+            { "PASS",
+              ":ircserv.local 461 * PASS :Not enough parameters\r\n" },
+            { "NICK", ":ircserv.local 431 * :No nickname given\r\n" },
+            { "USER",
+              ":ircserv.local 461 * USER :Not enough parameters\r\n" },
+            { "CAP", "" },
+            { "PING", ":ircserv.local 409 * :No origin specified\r\n" },
+            { "PONG", "" },
+            { "QUIT", "" },
+        };
+        static const std::size_t caseCount =
+            sizeof(cases) / sizeof(cases[0]);
 
-        for (std::size_t i = 0; i < sizeof(commands) / sizeof(commands[0]);
-             ++i)
+        for (std::size_t i = 0; i < caseCount; ++i)
         {
             Server  server(6667, "pass");
             Message message;
 
             server.addClient(3, "127.0.0.1");
-            message.command = commands[i];
-
-            /* 有効なパラメータを設定して、Parameter Validation を回避 */
-            if (param_sizes[i] > 0)
-            {
-                std::string params_str = params_setup[i];
-                std::size_t pos         = 0;
-
-                for (std::size_t j = 0; j < param_sizes[i]; ++j)
-                {
-                    std::size_t space = params_str.find(' ', pos);
-                    if (space == std::string::npos)
-                        space = params_str.size();
-                    if (space > pos)
-                        message.params.push_back(
-                            params_str.substr(pos, space - pos));
-                    pos = space + 1;
-                }
-            }
-
+            message.command = cases[i].command;
             server.dispatchCommand(3, message);
 
-            /* 実装済み Handler は動作するため、空でない可能性がある。
-               重要なのは Dispatcher がこれらのコマンドを受け入れたこと。
-               Handler の詳細な動作は Auth test で検証される。*/
-            ASSERT_TRUE(std::string("Dispatch: 未登録 ") + commands[i]
-                            + " はゲート通過",
-                        true);
+            ASSERT_EQ(std::string("Dispatch: 未登録 ") + cases[i].command +
+                          " はゲート通過",
+                      server.findClientByFd(3)->getSendBuffer(),
+                      cases[i].expected);
         }
     }
 
@@ -209,51 +200,43 @@ void runDispatchTests()
 
     {
         /* 登録後の通常 Command はゲートを通過する
-           (実装済み Command Handler は動作する) */
-        const char   *commands[] = { "NICK", "CAP", "PING", "PONG", "QUIT",
-                                     "JOIN", "PRIVMSG", "KICK", "INVITE",
-                                     "TOPIC", "MODE", "PART" };
-        const char   *params_setup[] = { "bob", "LS", "tok", "", "", "#ch",
-                                         "#ch msg", "#ch u", "#ch u",
-                                         "#ch t", "#ch +m", "#ch" };
-        std::size_t   param_sizes[] = { 1, 1, 1, 0, 0, 1, 2, 2, 2, 2, 2, 1 };
+           (no parameters で dispatched) */
+        struct CommandExpected
+        {
+            const char *command;
+            const char *expected;
+        };
+        static const CommandExpected cases[] = {
+            { "NICK", ":ircserv.local 431 alice :No nickname given\r\n" },
+            { "CAP", "" },
+            { "PING", ":ircserv.local 409 alice :No origin specified\r\n" },
+            { "PONG", "" },
+            { "QUIT", "" },
+            { "JOIN", "" },
+            { "PRIVMSG", "" },
+            { "KICK", "" },
+            { "INVITE", "" },
+            { "TOPIC", "" },
+            { "MODE", "" },
+            { "PART", "" },
+        };
+        static const std::size_t caseCount =
+            sizeof(cases) / sizeof(cases[0]);
 
-        for (std::size_t i = 0; i < sizeof(commands) / sizeof(commands[0]);
-             ++i)
+        for (std::size_t i = 0; i < caseCount; ++i)
         {
             Server  server(6667, "pass");
             Message message;
 
             server.addClient(3, "127.0.0.1");
             registerClient(server, 3, "alice");
-            message.command = commands[i];
-
-            /* 有効なパラメータを設定して、Parameter Validation を回避 */
-            if (param_sizes[i] > 0)
-            {
-                std::string params_str = params_setup[i];
-                std::size_t pos         = 0;
-
-                for (std::size_t j = 0; j < param_sizes[i]; ++j)
-                {
-                    std::size_t space = params_str.find(' ', pos);
-                    if (space == std::string::npos)
-                        space = params_str.size();
-                    if (space > pos)
-                        message.params.push_back(
-                            params_str.substr(pos, space - pos));
-                    pos = space + 1;
-                }
-            }
-
+            message.command = cases[i].command;
             server.dispatchCommand(3, message);
 
-            /* 実装済み Handler は動作するため、空でない可能性がある。
-               重要なのは Dispatcher がこれらのコマンドを受け入れたこと。
-               Handler の詳細な動作は Auth test で検証される。*/
-            ASSERT_TRUE(std::string("Dispatch: 登録済み ") + commands[i]
-                            + " はゲート通過",
-                        true);
+            ASSERT_EQ(std::string("Dispatch: 登録済み ") + cases[i].command +
+                          " はゲート通過",
+                      server.findClientByFd(3)->getSendBuffer(),
+                      cases[i].expected);
         }
     }
 
