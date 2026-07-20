@@ -516,4 +516,410 @@ void runChannelCmdTests()
                   takeOutput(server, 4),
                   ":alice!u@127.0.0.1 PRIVMSG bob :hi\r\n");
     }
+
+    /* ── KICK: 461 ────────────────────────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "KICK #g");
+        ASSERT_EQ("KICK: Parameter 不足は 461", takeOutput(server, 3),
+                  ":ircserv.local 461 alice KICK :Not enough parameters\r\n");
+    }
+
+    /* ── KICK: 403 (存在しない Channel) ─────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "KICK #nope bob");
+        ASSERT_EQ("KICK: 存在しない Channel は 403", takeOutput(server, 3),
+                  ":ircserv.local 403 alice #nope :No such channel\r\n");
+    }
+
+    /* ── KICK: 442 (実行者非 Member、対象 Nickname も不在) ──
+       非 Member チェックが対象 Nickname 探索より先に行われることを
+       確認する (401 ではなく 442) */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        registerUser(server, 4, "bob", "10.0.0.1");
+        dispatchLine(server, 4, "JOIN #g");
+        takeOutput(server, 4);
+
+        dispatchLine(server, 3, "KICK #g nobody");
+        ASSERT_EQ("KICK: 非 Member は 442 (対象不在より優先)",
+                  takeOutput(server, 3),
+                  ":ircserv.local 442 alice #g :You're not on that "
+                  "channel\r\n");
+    }
+
+    /* ── KICK: 482 (実行者が非 Operator、対象 Nickname も不在) ──
+       非 Operator チェックが対象 Nickname 探索より先に行われることを
+       確認する (401 ではなく 482) */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #g");
+        takeOutput(server, 3);
+
+        registerUser(server, 4, "bob", "10.0.0.1");
+        dispatchLine(server, 4, "JOIN #g");
+        takeOutput(server, 3);
+        takeOutput(server, 4);
+
+        dispatchLine(server, 4, "KICK #g nobody");
+        ASSERT_EQ("KICK: 非 Operator は 482 (対象不在より優先)",
+                  takeOutput(server, 4),
+                  ":ircserv.local 482 bob #g :You're not channel "
+                  "operator\r\n");
+    }
+
+    /* ── KICK: 401 (対象 Nickname 不在) ─────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #g");
+        takeOutput(server, 3);
+
+        dispatchLine(server, 3, "KICK #g nobody");
+        ASSERT_EQ("KICK: 対象 Nickname 不在は 401", takeOutput(server, 3),
+                  ":ircserv.local 401 alice nobody :No such nick/channel"
+                  "\r\n");
+    }
+
+    /* ── KICK: 441 (対象が Channel 非 Member) ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #g");
+        takeOutput(server, 3);
+
+        registerUser(server, 4, "bob", "10.0.0.1");
+
+        dispatchLine(server, 3, "KICK #g bob");
+        ASSERT_EQ("KICK: 対象が非 Member は 441", takeOutput(server, 3),
+                  ":ircserv.local 441 alice bob #g :They aren't on that "
+                  "channel\r\n");
+    }
+
+    /* ── KICK: 通知が削除前の全 Member (対象含む) へ届き、
+       対象は Channel から消える ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        registerUser(server, 4, "bob", "10.0.0.1");
+        dispatchLine(server, 3, "JOIN #g");
+        dispatchLine(server, 4, "JOIN #g");
+        takeOutput(server, 3);
+        takeOutput(server, 4);
+
+        dispatchLine(server, 3, "KICK #g bob :spam");
+        ASSERT_EQ("KICK: 実行者へも KICK 通知が届く", takeOutput(server, 3),
+                  ":alice!u@127.0.0.1 KICK #g bob :spam\r\n");
+        ASSERT_EQ("KICK: 対象自身にも削除前の KICK 通知が届く",
+                  takeOutput(server, 4),
+                  ":alice!u@127.0.0.1 KICK #g bob :spam\r\n");
+
+        dispatchLine(server, 4, "PART #g");
+        ASSERT_EQ("KICK: 対象は Channel から削除済み (再 PART は 442)",
+                  takeOutput(server, 4),
+                  ":ircserv.local 442 bob #g :You're not on that "
+                  "channel\r\n");
+    }
+
+    /* ── KICK: reason 省略時は実行者 Nickname ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        registerUser(server, 4, "bob", "10.0.0.1");
+        dispatchLine(server, 3, "JOIN #g");
+        dispatchLine(server, 4, "JOIN #g");
+        takeOutput(server, 3);
+        takeOutput(server, 4);
+
+        dispatchLine(server, 3, "KICK #g bob");
+        ASSERT_EQ("KICK: reason 省略時は実行者 Nickname",
+                  takeOutput(server, 3),
+                  ":alice!u@127.0.0.1 KICK #g bob :alice\r\n");
+    }
+
+    /* ── INVITE: 461 ──────────────────────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "INVITE bob");
+        ASSERT_EQ("INVITE: Parameter 不足は 461", takeOutput(server, 3),
+                  ":ircserv.local 461 alice INVITE :Not enough parameters"
+                  "\r\n");
+    }
+
+    /* ── INVITE: 401 (対象 Nickname 不在、Channel も不在) ──
+       対象 Nickname 探索が Channel 探索より先に行われることを確認する
+       (403 ではなく 401) */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "INVITE nobody #nope");
+        ASSERT_EQ("INVITE: 対象不在は 401 (Channel 不在より優先)",
+                  takeOutput(server, 3),
+                  ":ircserv.local 401 alice nobody :No such nick/channel"
+                  "\r\n");
+    }
+
+    /* ── INVITE: 403 (Channel 不在) ──────────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        registerUser(server, 4, "bob", "10.0.0.1");
+        dispatchLine(server, 3, "INVITE bob #nope");
+        ASSERT_EQ("INVITE: 存在しない Channel は 403", takeOutput(server, 3),
+                  ":ircserv.local 403 alice #nope :No such channel\r\n");
+    }
+
+    /* ── INVITE: 442 (実行者非 Member、対象は既に Member) ──
+       非 Member チェックが「既に Member」チェックより先に行われることを
+       確認する (443 ではなく 442) */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        registerUser(server, 4, "bob", "10.0.0.1");
+        dispatchLine(server, 4, "JOIN #g");
+        takeOutput(server, 4);
+
+        dispatchLine(server, 3, "INVITE bob #g");
+        ASSERT_EQ("INVITE: 非 Member は 442 (既に Member より優先)",
+                  takeOutput(server, 3),
+                  ":ircserv.local 442 alice #g :You're not on that "
+                  "channel\r\n");
+    }
+
+    /* ── INVITE: 482 (実行者が非 Operator、対象は既に Member) ──
+       非 Operator チェックが「既に Member」チェックより先に行われることを
+       確認する (443 ではなく 482) */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #g");
+        takeOutput(server, 3);
+
+        registerUser(server, 4, "bob", "10.0.0.1");
+        dispatchLine(server, 4, "JOIN #g");
+        takeOutput(server, 3);
+        takeOutput(server, 4);
+
+        dispatchLine(server, 4, "INVITE alice #g");
+        ASSERT_EQ("INVITE: 非 Operator は 482 (既に Member より優先)",
+                  takeOutput(server, 4),
+                  ":ircserv.local 482 bob #g :You're not channel "
+                  "operator\r\n");
+    }
+
+    /* ── INVITE: 443 (対象が既に Member) ────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        registerUser(server, 4, "bob", "10.0.0.1");
+        dispatchLine(server, 3, "JOIN #g");
+        dispatchLine(server, 4, "JOIN #g");
+        takeOutput(server, 3);
+        takeOutput(server, 4);
+
+        dispatchLine(server, 3, "INVITE bob #g");
+        ASSERT_EQ("INVITE: 対象が既に Member は 443", takeOutput(server, 3),
+                  ":ircserv.local 443 alice bob #g :is already on channel"
+                  "\r\n");
+    }
+
+    /* ── INVITE: 成功で 341 + 対象への通知、再 INVITE も再送 ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #g");
+        takeOutput(server, 3);
+
+        registerUser(server, 4, "bob", "10.0.0.1");
+
+        dispatchLine(server, 3, "INVITE bob #g");
+        ASSERT_EQ("INVITE: 実行者へ 341", takeOutput(server, 3),
+                  ":ircserv.local 341 alice #g bob\r\n");
+        ASSERT_EQ("INVITE: 対象へ INVITE 通知", takeOutput(server, 4),
+                  ":alice!u@127.0.0.1 INVITE bob :#g\r\n");
+
+        dispatchLine(server, 3, "INVITE bob #g");
+        ASSERT_EQ("INVITE: 再 INVITE でも 341 が再送される",
+                  takeOutput(server, 3),
+                  ":ircserv.local 341 alice #g bob\r\n");
+        ASSERT_EQ("INVITE: 再 INVITE でも通知が再送される",
+                  takeOutput(server, 4),
+                  ":alice!u@127.0.0.1 INVITE bob :#g\r\n");
+    }
+
+    /* ── TOPIC: 461 ───────────────────────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "TOPIC");
+        ASSERT_EQ("TOPIC: Parameter 不足は 461", takeOutput(server, 3),
+                  ":ircserv.local 461 alice TOPIC :Not enough parameters"
+                  "\r\n");
+    }
+
+    /* ── TOPIC: 403 (存在しない Channel) ─────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "TOPIC #nope");
+        ASSERT_EQ("TOPIC: 存在しない Channel は 403", takeOutput(server, 3),
+                  ":ircserv.local 403 alice #nope :No such channel\r\n");
+    }
+
+    /* ── TOPIC: 442 (非 Member) ─────────────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        registerUser(server, 4, "bob", "10.0.0.1");
+        dispatchLine(server, 4, "JOIN #g");
+        takeOutput(server, 4);
+
+        dispatchLine(server, 3, "TOPIC #g");
+        ASSERT_EQ("TOPIC: 非 Member は 442", takeOutput(server, 3),
+                  ":ircserv.local 442 alice #g :You're not on that "
+                  "channel\r\n");
+    }
+
+    /* ── TOPIC: 照会 331 → 変更 → 照会 332 ────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #g");
+        takeOutput(server, 3);
+
+        dispatchLine(server, 3, "TOPIC #g");
+        ASSERT_EQ("TOPIC: 未設定の照会は 331", takeOutput(server, 3),
+                  ":ircserv.local 331 alice #g :No topic is set\r\n");
+
+        dispatchLine(server, 3, "TOPIC #g :hello world");
+        ASSERT_EQ("TOPIC: 変更通知 (自分)", takeOutput(server, 3),
+                  ":alice!u@127.0.0.1 TOPIC #g :hello world\r\n");
+
+        dispatchLine(server, 3, "TOPIC #g");
+        ASSERT_EQ("TOPIC: 設定済みの照会は 332", takeOutput(server, 3),
+                  ":ircserv.local 332 alice #g :hello world\r\n");
+    }
+
+    /* ── TOPIC: +t (既定で有効) は非 Operator が 482、Operator は変更可 ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #g");
+        takeOutput(server, 3);
+
+        registerUser(server, 4, "bob", "10.0.0.1");
+        dispatchLine(server, 4, "JOIN #g");
+        takeOutput(server, 3);
+        takeOutput(server, 4);
+
+        dispatchLine(server, 4, "TOPIC #g :bob's topic");
+        ASSERT_EQ("TOPIC: +t 既定有効、非 Operator は 482",
+                  takeOutput(server, 4),
+                  ":ircserv.local 482 bob #g :You're not channel "
+                  "operator\r\n");
+
+        dispatchLine(server, 3, "TOPIC #g :alice's topic");
+        ASSERT_EQ("TOPIC: +t 有効でも Operator は変更可 (実行者)",
+                  takeOutput(server, 3),
+                  ":alice!u@127.0.0.1 TOPIC #g :alice's topic\r\n");
+        ASSERT_EQ("TOPIC: 変更通知は全 Member (残り Member) へ届く",
+                  takeOutput(server, 4),
+                  ":alice!u@127.0.0.1 TOPIC #g :alice's topic\r\n");
+    }
+
+    /* ── TOPIC: +t を無効化すれば非 Operator でも変更可 ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #g");
+        takeOutput(server, 3);
+
+        registerUser(server, 4, "bob", "10.0.0.1");
+        dispatchLine(server, 4, "JOIN #g");
+        takeOutput(server, 3);
+        takeOutput(server, 4);
+
+        Channel *channel = server.findChannel("#g");
+
+        ASSERT_TRUE("TOPIC: +t 無効化前提の Channel が見つかる",
+                    channel != NULL);
+        channel->setTopicRestricted(false);
+
+        dispatchLine(server, 4, "TOPIC #g :bob's topic");
+        ASSERT_EQ("TOPIC: +t 無効なら非 Operator でも変更可 (実行者)",
+                  takeOutput(server, 4),
+                  ":bob!u@10.0.0.1 TOPIC #g :bob's topic\r\n");
+        ASSERT_EQ("TOPIC: +t 無効時も変更通知は全 Member へ届く",
+                  takeOutput(server, 3),
+                  ":bob!u@10.0.0.1 TOPIC #g :bob's topic\r\n");
+    }
+
+    /* ── TOPIC: 空 topic は削除され、照会が 331 に戻る ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #g");
+        takeOutput(server, 3);
+
+        dispatchLine(server, 3, "TOPIC #g :hello");
+        takeOutput(server, 3);
+
+        dispatchLine(server, 3, "TOPIC #g :");
+        ASSERT_EQ("TOPIC: 空文字への変更通知", takeOutput(server, 3),
+                  ":alice!u@127.0.0.1 TOPIC #g :\r\n");
+
+        dispatchLine(server, 3, "TOPIC #g");
+        ASSERT_EQ("TOPIC: 空 topic 削除後の照会は 331", takeOutput(server, 3),
+                  ":ircserv.local 331 alice #g :No topic is set\r\n");
+    }
 }

@@ -10,10 +10,11 @@
 #include "../util/Reply.hpp"
 
 /* ============================================================
- * チャンネル系 Command Handler (設計書 04 §10, §15)
+ * チャンネル系 Command Handler (設計書 04 §10, §12, §13, §14, §15)
  *
- * JOIN / PART を実装する。所属関係の更新は Server::joinChannel() /
- * Server::leaveChannel() (ServerRelations.cpp) に委譲する。
+ * JOIN / PART / KICK / INVITE / TOPIC を実装する。所属関係の更新は
+ * Server::joinChannel() / Server::leaveChannel() (ServerRelations.cpp)
+ * に委譲する。
  * ============================================================ */
 
 /* ── JOIN (設計書 04 §10) ───────────────── */
@@ -200,4 +201,187 @@ void Server::handlePart(int fd, const Message &message)
             continue;
         leaveChannel(fd, normalizedKey, reason, true);
     }
+}
+
+/* ── KICK (設計書 04 §12) ───────────────── */
+
+void Server::handleKick(int fd, const Message &message)
+{
+    Client *client = findClientByFd(fd);
+
+    if (client == NULL)
+        return;
+    if (!requireParams(fd, message, 2))
+        return;
+
+    const std::string &channelName = message.params[0];
+    const std::string &targetNick  = message.params[1];
+    Channel            *channel    = findChannel(channelName);
+
+    if (channel == NULL)
+    {
+        queueToClient(fd, Reply::numeric(_serverName, *client,
+                                         Numeric::ERR_NOSUCHCHANNEL,
+                                         channelName + " :No such channel"));
+        return;
+    }
+    /* 実行者が Member であること → Operator であることの順に確認する
+       (設計書 04 §12) */
+    if (!requireChannelMember(fd, *channel))
+        return;
+    if (!requireChannelOperator(fd, *channel))
+        return;
+
+    Client *target = findClientByNickname(targetNick);
+
+    if (target == NULL)
+    {
+        queueToClient(fd, Reply::numeric(
+            _serverName, *client, Numeric::ERR_NOSUCHNICK,
+            targetNick + " :No such nick/channel"));
+        return;
+    }
+    if (!channel->hasMember(target->getFd()))
+    {
+        queueToClient(fd, Reply::numeric(
+            _serverName, *client, Numeric::ERR_USERNOTINCHANNEL,
+            targetNick + " " + channel->getName()
+                + " :They aren't on that channel"));
+        return;
+    }
+
+    /* reason が無ければ実行者 Nickname を使う (設計書 04 §12) */
+    std::string reason = (message.params.size() >= 3)
+                              ? message.params[2]
+                              : client->getNickname();
+
+    /* 削除前の全 Member (対象自身を含む) へ KICK 通知を queue する
+       (設計書 04 §12) */
+    std::string notice = Reply::command(
+        Reply::clientPrefix(*client), "KICK",
+        channel->getName() + " " + target->getNickname() + " :" + reason);
+
+    broadcastToChannel(*channel, notice, -1);
+
+    /* 通知済みのため sendPart=false で leaveChannel() を再利用する。
+       Operator の自動移譲は行わない (設計書 04 §12) */
+    leaveChannel(target->getFd(), channel->getKeyName(), reason, false);
+}
+
+/* ── INVITE (設計書 04 §13) ─────────────── */
+
+void Server::handleInvite(int fd, const Message &message)
+{
+    Client *client = findClientByFd(fd);
+
+    if (client == NULL)
+        return;
+    if (!requireParams(fd, message, 2))
+        return;
+
+    const std::string &targetNick  = message.params[0];
+    const std::string &channelName = message.params[1];
+    Client             *target     = findClientByNickname(targetNick);
+
+    /* 対象 Client 検索 → Channel 検索の順 (設計書 04 §13。JOIN や
+       KICK と検証順が異なる点に注意) */
+    if (target == NULL)
+    {
+        queueToClient(fd, Reply::numeric(
+            _serverName, *client, Numeric::ERR_NOSUCHNICK,
+            targetNick + " :No such nick/channel"));
+        return;
+    }
+
+    Channel *channel = findChannel(channelName);
+
+    if (channel == NULL)
+    {
+        queueToClient(fd, Reply::numeric(_serverName, *client,
+                                         Numeric::ERR_NOSUCHCHANNEL,
+                                         channelName + " :No such channel"));
+        return;
+    }
+    /* 課題文でOperator固有Commandとして指定されているため、Channel Mode
+       に関係なく Operator だけが実行できる (設計書 04 §13) */
+    if (!requireChannelMember(fd, *channel))
+        return;
+    if (!requireChannelOperator(fd, *channel))
+        return;
+    if (channel->hasMember(target->getFd()))
+    {
+        queueToClient(fd, Reply::numeric(
+            _serverName, *client, Numeric::ERR_USERONCHANNEL,
+            target->getNickname() + " " + channel->getName()
+                + " :is already on channel"));
+        return;
+    }
+
+    /* 戻り値 false (既に Invite 済み) でも成功扱いとし、通知を再送する
+       (設計書 04 §13) */
+    channel->addInvite(target->getFd());
+
+    queueToClient(fd, Reply::numeric(
+        _serverName, *client, Numeric::RPL_INVITING,
+        channel->getName() + " " + target->getNickname()));
+    queueToClient(target->getFd(),
+                  Reply::command(Reply::clientPrefix(*client), "INVITE",
+                                 target->getNickname() + " :"
+                                     + channel->getName()));
+}
+
+/* ── TOPIC (設計書 04 §14) ──────────────── */
+
+void Server::handleTopic(int fd, const Message &message)
+{
+    Client *client = findClientByFd(fd);
+
+    if (client == NULL)
+        return;
+    if (!requireParams(fd, message, 1))
+        return;
+
+    const std::string &channelName = message.params[0];
+    Channel            *channel    = findChannel(channelName);
+
+    if (channel == NULL)
+    {
+        queueToClient(fd, Reply::numeric(_serverName, *client,
+                                         Numeric::ERR_NOSUCHCHANNEL,
+                                         channelName + " :No such channel"));
+        return;
+    }
+    if (!requireChannelMember(fd, *channel))
+        return;
+
+    /* topic Parameter が無ければ照会 (設計書 04 §14) */
+    if (message.params.size() < 2)
+    {
+        if (channel->hasTopic())
+            queueToClient(fd, Reply::numeric(
+                _serverName, *client, Numeric::RPL_TOPIC,
+                channel->getName() + " :" + channel->getTopic()));
+        else
+            queueToClient(fd, Reply::numeric(
+                _serverName, *client, Numeric::RPL_NOTOPIC,
+                channel->getName() + " :No topic is set"));
+        return;
+    }
+
+    /* 変更: +t 有効かつ実行者が Operator でなければ 482 (設計書 04 §14) */
+    if (channel->isTopicRestricted() && !requireChannelOperator(fd, *channel))
+        return;
+
+    const std::string &topic = message.params[1];
+
+    /* 空文字 topic は削除 (Channel::hasTopic() は空文字を「未設定」と
+       扱う) (設計書 04 §14) */
+    channel->setTopic(topic);
+
+    /* 全 Member (自分含む) へ通知する (設計書 04 §14) */
+    std::string notice = Reply::command(
+        Reply::clientPrefix(*client), "TOPIC",
+        channel->getName() + " :" + topic);
+
+    broadcastToChannel(*channel, notice, -1);
 }
