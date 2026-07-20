@@ -376,4 +376,144 @@ void runChannelCmdTests()
                   ":ircserv.local 353 bob = #solo :@bob\r\n"
                   ":ircserv.local 366 bob #solo :End of NAMES list\r\n");
     }
+
+    /* ── PRIVMSG: 411 (target なし) ──────────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "PRIVMSG");
+        ASSERT_EQ("PRIVMSG: target なしは 411", takeOutput(server, 3),
+                  ":ircserv.local 411 alice :No recipient given "
+                  "(PRIVMSG)\r\n");
+    }
+
+    /* ── PRIVMSG: 412 (text なし) ────────────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "PRIVMSG bob");
+        ASSERT_EQ("PRIVMSG: text なしは 412", takeOutput(server, 3),
+                  ":ircserv.local 412 alice :No text to send\r\n");
+    }
+
+    /* ── PRIVMSG: 412 (text が空) ────────────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "PRIVMSG bob :");
+        ASSERT_EQ("PRIVMSG: text が空文字は 412", takeOutput(server, 3),
+                  ":ircserv.local 412 alice :No text to send\r\n");
+    }
+
+    /* ── PRIVMSG: 401 (Nickname 未存在) ──────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "PRIVMSG nobody :hi");
+        ASSERT_EQ("PRIVMSG: 存在しない Nickname は 401", takeOutput(server, 3),
+                  ":ircserv.local 401 alice nobody :No such nick/channel"
+                  "\r\n");
+    }
+
+    /* ── PRIVMSG: 403 (Channel 未存在) ───────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "PRIVMSG #nope :hi");
+        ASSERT_EQ("PRIVMSG: 存在しない Channel は 403", takeOutput(server, 3),
+                  ":ircserv.local 403 alice #nope :No such channel\r\n");
+    }
+
+    /* ── PRIVMSG: 404 (Channel 非 Member) ────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        registerUser(server, 4, "bob", "10.0.0.1");
+        dispatchLine(server, 4, "JOIN #general");
+        takeOutput(server, 4);
+
+        dispatchLine(server, 3, "PRIVMSG #general :hi");
+        ASSERT_EQ("PRIVMSG: 非 Member から Channel 宛は 404",
+                  takeOutput(server, 3),
+                  ":ircserv.local 404 alice #general :Cannot send to "
+                  "channel\r\n");
+    }
+
+    /* ── PRIVMSG: Channel 宛は送信者以外の全 Member へ配送 ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        registerUser(server, 4, "bob", "10.0.0.1");
+        dispatchLine(server, 3, "JOIN #general");
+        dispatchLine(server, 4, "JOIN #general");
+        takeOutput(server, 3);
+        takeOutput(server, 4);
+
+        dispatchLine(server, 3, "PRIVMSG #general :hello");
+        ASSERT_EQ("PRIVMSG: 送信者自身には Channel message が届かない",
+                  takeOutput(server, 3), "");
+        ASSERT_EQ("PRIVMSG: 送信者以外の Member へ配送", takeOutput(server, 4),
+                  ":alice!u@127.0.0.1 PRIVMSG #general :hello\r\n");
+    }
+
+    /* ── PRIVMSG: Direct は対象のみへ配送 ────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        registerUser(server, 4, "bob", "10.0.0.1");
+        registerUser(server, 5, "carol", "10.0.0.2");
+
+        dispatchLine(server, 3, "PRIVMSG bob :hi");
+        ASSERT_EQ("PRIVMSG: Direct 送信者には応答なし", takeOutput(server, 3),
+                  "");
+        ASSERT_EQ("PRIVMSG: Direct は対象のみへ配送", takeOutput(server, 4),
+                  ":alice!u@127.0.0.1 PRIVMSG bob :hi\r\n");
+        ASSERT_EQ("PRIVMSG: Direct は無関係な Client には届かない",
+                  takeOutput(server, 5), "");
+    }
+
+    /* ── PRIVMSG: 自分宛でも 1 回 queue される ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "PRIVMSG alice :myself");
+        ASSERT_EQ("PRIVMSG: 自分宛は 1 回だけ届く", takeOutput(server, 3),
+                  ":alice!u@127.0.0.1 PRIVMSG alice :myself\r\n");
+    }
+
+    /* ── PRIVMSG: comma 区切り複数 target で 1 つ失敗しても他へ配送 ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        registerUser(server, 4, "bob", "10.0.0.1");
+
+        dispatchLine(server, 3, "PRIVMSG bob,nobody :hi");
+        ASSERT_EQ("PRIVMSG: comma 区切りで存在しない target は 401 のみ返す",
+                  takeOutput(server, 3),
+                  ":ircserv.local 401 alice nobody :No such nick/channel"
+                  "\r\n");
+        ASSERT_EQ("PRIVMSG: comma 区切りで存在する target には配送される",
+                  takeOutput(server, 4),
+                  ":alice!u@127.0.0.1 PRIVMSG bob :hi\r\n");
+    }
 }

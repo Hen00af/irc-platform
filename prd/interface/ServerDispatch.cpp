@@ -89,15 +89,10 @@ void Server::dispatchCommand(int fd, const Message &message)
  *
  * 認証系 (PASS/NICK/USER/CAP/PING/PONG) は handler/
  * ServerAuthCommands.cpp に実装済み。JOIN/PART は handler/
- * ServerChannelCommands.cpp に実装済み。残りはメッセージ系・KICK/
- * INVITE/TOPIC/QUIT・MODE の実装タスクで置き換える。
+ * ServerChannelCommands.cpp、PRIVMSG は handler/
+ * ServerMessageCommands.cpp に実装済み。残りは KICK/INVITE/TOPIC/QUIT・
+ * MODE の実装タスクで置き換える。
  * ============================================================ */
-
-void Server::handlePrivmsg(int fd, const Message &message)
-{
-    (void)fd;
-    (void)message;
-}
 
 void Server::handleKick(int fd, const Message &message)
 {
