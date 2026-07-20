@@ -364,4 +364,442 @@ void runModeTests()
                   ":ircserv.local 472 alice t :is unknown mode char to me "
                   "for #c\r\n");
     }
+
+    /* ── k: +k secret 通知・324 反映・JOIN の key 一致要求 ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #c");
+        takeOutput(server, 3);
+
+        dispatchLine(server, 3, "MODE #c +k secret");
+        ASSERT_EQ("MODE: +k secret の通知", takeOutput(server, 3),
+                  ":alice!u@127.0.0.1 MODE #c +k secret\r\n");
+
+        dispatchLine(server, 3, "MODE #c");
+        ASSERT_EQ("MODE: +k 後の照会は +tk secret (itkl 順)",
+                  takeOutput(server, 3),
+                  ":ircserv.local 324 alice #c +tk secret\r\n");
+
+        registerUser(server, 4, "bob", "10.0.0.1");
+        dispatchLine(server, 4, "JOIN #c");
+        ASSERT_EQ("MODE: key 不一致の JOIN は 475", takeOutput(server, 4),
+                  ":ircserv.local 475 bob #c :Cannot join channel (+k)\r\n");
+
+        dispatchLine(server, 4, "JOIN #c secret");
+        ASSERT_EQ("MODE: 正しい key の JOIN は成功", takeOutput(server, 4),
+                  ":bob!u@10.0.0.1 JOIN :#c\r\n"
+                  ":ircserv.local 331 bob #c :No topic is set\r\n"
+                  ":ircserv.local 353 bob = #c :@alice bob\r\n"
+                  ":ircserv.local 366 bob #c :End of NAMES list\r\n");
+    }
+
+    /* ── k: 既存 key の置換可 ─────────────────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #c");
+        takeOutput(server, 3);
+
+        dispatchLine(server, 3, "MODE #c +k secret");
+        takeOutput(server, 3);
+
+        dispatchLine(server, 3, "MODE #c +k newkey");
+        ASSERT_EQ("MODE: 既存 key の置換も実変更扱い",
+                  takeOutput(server, 3),
+                  ":alice!u@127.0.0.1 MODE #c +k newkey\r\n");
+
+        dispatchLine(server, 3, "MODE #c");
+        ASSERT_EQ("MODE: 置換後の照会は新しい key",
+                  takeOutput(server, 3),
+                  ":ircserv.local 324 alice #c +tk newkey\r\n");
+    }
+
+    /* ── k: -k は引数なしで解除 ───────────────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #c");
+        takeOutput(server, 3);
+
+        dispatchLine(server, 3, "MODE #c +k secret");
+        takeOutput(server, 3);
+
+        dispatchLine(server, 3, "MODE #c -k");
+        ASSERT_EQ("MODE: -k の通知", takeOutput(server, 3),
+                  ":alice!u@127.0.0.1 MODE #c -k\r\n");
+
+        dispatchLine(server, 3, "MODE #c");
+        ASSERT_EQ("MODE: -k 後の照会は +t だけ", takeOutput(server, 3),
+                  ":ircserv.local 324 alice #c +t\r\n");
+    }
+
+    /* ── k: 不正な key (24 文字) は 461、状態不変 ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #c");
+        takeOutput(server, 3);
+
+        dispatchLine(server, 3, "MODE #c +k abcdefghijklmnopqrstuvwx");
+        ASSERT_EQ("MODE: 24 文字の key は 461", takeOutput(server, 3),
+                  ":ircserv.local 461 alice MODE :Not enough parameters"
+                  "\r\n");
+
+        dispatchLine(server, 3, "MODE #c");
+        ASSERT_EQ("MODE: 不正 key 後も状態は +t のまま",
+                  takeOutput(server, 3),
+                  ":ircserv.local 324 alice #c +t\r\n");
+    }
+
+    /* ── k: key 未設定で -k は通知なし ─────────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #c");
+        takeOutput(server, 3);
+
+        dispatchLine(server, 3, "MODE #c -k");
+        ASSERT_EQ("MODE: key 未設定の -k は通知なし",
+                  takeOutput(server, 3), "");
+    }
+
+    /* ── o: +o bob で bob が Operator になり KICK 可 ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #c");
+        takeOutput(server, 3);
+
+        registerUser(server, 4, "bob", "10.0.0.1");
+        dispatchLine(server, 4, "JOIN #c");
+        takeOutput(server, 3);
+        takeOutput(server, 4);
+
+        registerUser(server, 5, "charlie", "10.0.0.2");
+        dispatchLine(server, 5, "JOIN #c");
+        takeOutput(server, 3);
+        takeOutput(server, 4);
+        takeOutput(server, 5);
+
+        dispatchLine(server, 3, "MODE #c +o bob");
+        ASSERT_EQ("MODE: +o bob の通知", takeOutput(server, 3),
+                  ":alice!u@127.0.0.1 MODE #c +o bob\r\n");
+        takeOutput(server, 4);
+        takeOutput(server, 5);
+
+        dispatchLine(server, 4, "KICK #c charlie");
+        ASSERT_EQ("MODE: +o で Operator になった bob は KICK 可",
+                  takeOutput(server, 4),
+                  ":bob!u@10.0.0.1 KICK #c charlie :bob\r\n");
+    }
+
+    /* ── o: -o bob で解除 ─────────────────────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #c");
+        takeOutput(server, 3);
+
+        registerUser(server, 4, "bob", "10.0.0.1");
+        dispatchLine(server, 4, "JOIN #c");
+        takeOutput(server, 3);
+        takeOutput(server, 4);
+
+        dispatchLine(server, 3, "MODE #c +o bob");
+        takeOutput(server, 3);
+        takeOutput(server, 4);
+
+        dispatchLine(server, 3, "MODE #c -o bob");
+        ASSERT_EQ("MODE: -o bob の通知", takeOutput(server, 3),
+                  ":alice!u@127.0.0.1 MODE #c -o bob\r\n");
+        takeOutput(server, 4);
+
+        dispatchLine(server, 4, "MODE #c +i");
+        ASSERT_EQ("MODE: -o 後の bob は非 Operator に戻る",
+                  takeOutput(server, 4),
+                  ":ircserv.local 482 bob #c :You're not channel operator"
+                  "\r\n");
+    }
+
+    /* ── o: 対象 Nick 不在 → 401 ───────────────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #c");
+        takeOutput(server, 3);
+
+        dispatchLine(server, 3, "MODE #c +o nosuch");
+        ASSERT_EQ("MODE: 対象不在の +o は 401", takeOutput(server, 3),
+                  ":ircserv.local 401 alice nosuch :No such nick/channel"
+                  "\r\n");
+    }
+
+    /* ── o: 対象が非 Member → 441 ──────────────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #c");
+        takeOutput(server, 3);
+
+        registerUser(server, 4, "bob", "10.0.0.1");
+
+        dispatchLine(server, 3, "MODE #c +o bob");
+        ASSERT_EQ("MODE: 対象非 Member の +o は 441", takeOutput(server, 3),
+                  ":ircserv.local 441 alice bob #c :They aren't on that "
+                  "channel\r\n");
+    }
+
+    /* ── o: 引数不足は 461 ────────────────────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #c");
+        takeOutput(server, 3);
+
+        dispatchLine(server, 3, "MODE #c +o");
+        ASSERT_EQ("MODE: +o 引数不足は 461", takeOutput(server, 3),
+                  ":ircserv.local 461 alice MODE :Not enough parameters"
+                  "\r\n");
+    }
+
+    /* ── o: 既に Operator への +o は通知なし ──── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #c");
+        takeOutput(server, 3);
+
+        dispatchLine(server, 3, "MODE #c +o alice");
+        ASSERT_EQ("MODE: 既に Operator への +o は通知なし",
+                  takeOutput(server, 3), "");
+    }
+
+    /* ── o: 最後の Operator を -o しても許可 ──── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #c");
+        takeOutput(server, 3);
+
+        dispatchLine(server, 3, "MODE #c -o alice");
+        ASSERT_EQ("MODE: 最後の Operator への -o も成功",
+                  takeOutput(server, 3),
+                  ":alice!u@127.0.0.1 MODE #c -o alice\r\n");
+    }
+
+    /* ── l: +l 3 設定・324 反映・満員 JOIN 471 ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #c");
+        takeOutput(server, 3);
+
+        registerUser(server, 4, "bob", "10.0.0.1");
+        dispatchLine(server, 4, "JOIN #c");
+        takeOutput(server, 3);
+        takeOutput(server, 4);
+
+        dispatchLine(server, 3, "MODE #c +l 3");
+        ASSERT_EQ("MODE: +l 3 の通知", takeOutput(server, 3),
+                  ":alice!u@127.0.0.1 MODE #c +l 3\r\n");
+
+        dispatchLine(server, 3, "MODE #c");
+        ASSERT_EQ("MODE: +l 後の照会は +tl 3", takeOutput(server, 3),
+                  ":ircserv.local 324 alice #c +tl 3\r\n");
+
+        registerUser(server, 5, "charlie", "10.0.0.2");
+        dispatchLine(server, 5, "JOIN #c");
+        takeOutput(server, 3);
+        takeOutput(server, 4);
+        takeOutput(server, 5);
+
+        registerUser(server, 6, "dave", "10.0.0.3");
+        dispatchLine(server, 6, "JOIN #c");
+        ASSERT_EQ("MODE: 満員 Channel への JOIN は 471", takeOutput(server, 6),
+                  ":ircserv.local 471 dave #c :Cannot join channel (+l)"
+                  "\r\n");
+    }
+
+    /* ── l: 不正 limit (0/abc/100001) は黙って無視 ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #c");
+        takeOutput(server, 3);
+
+        dispatchLine(server, 3, "MODE #c +l 0");
+        ASSERT_EQ("MODE: +l 0 は無視され通知なし", takeOutput(server, 3), "");
+
+        dispatchLine(server, 3, "MODE #c +l abc");
+        ASSERT_EQ("MODE: +l abc は無視され通知なし",
+                  takeOutput(server, 3), "");
+
+        dispatchLine(server, 3, "MODE #c +l 100001");
+        ASSERT_EQ("MODE: +l 100001 は無視され通知なし",
+                  takeOutput(server, 3), "");
+
+        dispatchLine(server, 3, "MODE #c");
+        ASSERT_EQ("MODE: 不正 limit はどれも状態を変えない",
+                  takeOutput(server, 3),
+                  ":ircserv.local 324 alice #c +t\r\n");
+    }
+
+    /* ── l: -l で解除 ─────────────────────────── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #c");
+        takeOutput(server, 3);
+
+        dispatchLine(server, 3, "MODE #c +l 3");
+        takeOutput(server, 3);
+
+        dispatchLine(server, 3, "MODE #c -l");
+        ASSERT_EQ("MODE: -l の通知", takeOutput(server, 3),
+                  ":alice!u@127.0.0.1 MODE #c -l\r\n");
+
+        dispatchLine(server, 3, "MODE #c");
+        ASSERT_EQ("MODE: -l 後の照会は +t だけ", takeOutput(server, 3),
+                  ":ircserv.local 324 alice #c +t\r\n");
+    }
+
+    /* ── l: 現 Member 数未満の limit も設定可 ──── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #c");
+        takeOutput(server, 3);
+
+        registerUser(server, 4, "bob", "10.0.0.1");
+        dispatchLine(server, 4, "JOIN #c");
+        takeOutput(server, 3);
+        takeOutput(server, 4);
+
+        dispatchLine(server, 3, "MODE #c +l 1");
+        ASSERT_EQ("MODE: 現 Member 数 (2) 未満の limit (1) も設定可",
+                  takeOutput(server, 3),
+                  ":alice!u@127.0.0.1 MODE #c +l 1\r\n");
+
+        registerUser(server, 5, "charlie", "10.0.0.2");
+        dispatchLine(server, 5, "JOIN #c");
+        ASSERT_EQ("MODE: 既存 Member 超過の limit は新規 JOIN を拒否",
+                  takeOutput(server, 5),
+                  ":ircserv.local 471 charlie #c :Cannot join channel (+l)"
+                  "\r\n");
+    }
+
+    /* ── 複数: +kol secret bob 10 の引数消費順・単一通知 ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #c");
+        takeOutput(server, 3);
+
+        registerUser(server, 4, "bob", "10.0.0.1");
+        dispatchLine(server, 4, "JOIN #c");
+        takeOutput(server, 3);
+        takeOutput(server, 4);
+
+        dispatchLine(server, 3, "MODE #c +kol secret bob 10");
+        ASSERT_EQ("MODE: +kol secret bob 10 は左から順に引数消費・単一通知",
+                  takeOutput(server, 3),
+                  ":alice!u@127.0.0.1 MODE #c +kol secret bob 10\r\n");
+
+        dispatchLine(server, 3, "MODE #c");
+        ASSERT_EQ("MODE: +kol 後の照会は +tkl secret 10",
+                  takeOutput(server, 3),
+                  ":ircserv.local 324 alice #c +tkl secret 10\r\n");
+    }
+
+    /* ── 複数: +it-k (先に +k してから) の符号切替通知 ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #c");
+        takeOutput(server, 3);
+
+        /* t を初期値 true から false へ落としておく。i は初期値 false
+           のままなので、後続の +it-k で i/t とも実変更になる */
+        dispatchLine(server, 3, "MODE #c -t");
+        takeOutput(server, 3);
+
+        dispatchLine(server, 3, "MODE #c +k secret");
+        takeOutput(server, 3);
+
+        dispatchLine(server, 3, "MODE #c +it-k");
+        ASSERT_EQ("MODE: +it-k は符号切替を1回ずつ出力",
+                  takeOutput(server, 3),
+                  ":alice!u@127.0.0.1 MODE #c +it-k\r\n");
+    }
+
+    /* ── 複数: +io nosuch は +i 成功・o は 401・通知は +i だけ ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #c");
+        takeOutput(server, 3);
+
+        dispatchLine(server, 3, "MODE #c +io nosuch");
+        ASSERT_EQ("MODE: +io nosuch は o が 401",
+                  takeOutput(server, 3),
+                  ":ircserv.local 401 alice nosuch :No such nick/channel"
+                  "\r\n"
+                  ":alice!u@127.0.0.1 MODE #c +i\r\n");
+    }
+
+    /* ── 複数: +im は +i 成功・m は 472・通知は +i だけ ── */
+
+    {
+        Server server(6667, "secret");
+
+        registerUser(server, 3, "alice", "127.0.0.1");
+        dispatchLine(server, 3, "JOIN #c");
+        takeOutput(server, 3);
+
+        dispatchLine(server, 3, "MODE #c +im");
+        ASSERT_EQ("MODE: +im は m が 472",
+                  takeOutput(server, 3),
+                  ":ircserv.local 472 alice m :is unknown mode char to me "
+                  "for #c\r\n"
+                  ":alice!u@127.0.0.1 MODE #c +i\r\n");
+    }
 }
