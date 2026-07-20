@@ -1,98 +1,80 @@
 #pragma once
 
-#include <string>
 #include <map>
-#include <vector>
-#include <poll.h>
+#include <string>
 
 #include "../domain/Client.hpp"
-#include "../domain/Channel.hpp"
+#include "../domain/Message.hpp"
 
 /* ============================================================
  * Server
  *
- * poll() ベースの IRC サーバー。
+ * Client の所有と Command のディスパッチを担う (設計書 02 §4)。
  *
- * 責務:
- *   - listen ソケットのセットアップ
- *   - poll ループ (新規接続・データ受信・送信)
- *   - IRC メッセージのパースとコマンドディスパッチ
- *   - クライアント / チャンネルのライフサイクル管理
+ * 移行期の骨格である。ネットワーク層 (listen socket・poll ループ・
+ * ServerNetwork.cpp) と Channel・Nickname 索引はまだ持たない。
+ * 設計書 02 §4.2 のうち未使用のメンバ (_listenFd, _running, _pollFds,
+ * _channels, _nickToFd, _pendingDisconnects) は、それらを使う層の
+ * 実装時に追加する。
  * ============================================================ */
 class Server
 {
 public:
-    Server(int port, const std::string& password);
-    ~Server();
+    /* 設計書 02 §4.3。socket 作成 (setupListeningSocket) はネットワーク
+       層の実装時に追加するため、ここではメンバ初期化のみ行う */
+    Server(int port, const std::string &password);
 
-    /* メインループ */
-    void run();
-    /* シグナルを受けてループを停止する */
-    void stop();
+    /* ── 接続管理 (設計書 02 にない移行期 API) ──
+     *
+     * 設計書 02 の接続受付は acceptClient() (実 socket 前提) だが未実装の
+     * ため、Client Map への出し入れだけを分離した。ネットワーク担当は
+     * acceptClient() / disconnectClient() の実装からこれらを呼んでよい */
+
+    /* 同一 FD が既に存在すれば false を返し、何もしない。
+       挿入は insert(std::make_pair(...)) を使う (設計書 02 §5.3) */
+    bool addClient(int fd, const std::string &hostname);
+    /* FD の close() は行わない (FD の所有はネットワーク層) */
+    void removeClient(int fd);
+
+    /* ── 検索 (設計書 02 §4.6) ──────────────
+       失敗時は NULL を返す。例外を送出しない */
+    Client       *findClientByFd(int fd);
+    const Client *findClientByFd(int fd) const;
+
+    /* ── 送信 (設計書 02 §4.9) ──────────────
+       末尾が CRLF でなければ CRLF を付与し、該当 Client の送信バッファへ
+       追加する。send() は呼ばない。FD が不在なら何もしない。
+       空文字を queue しないのは呼び出し側の責務 (設計書 06 §17) */
+    void queueToClient(int fd, const std::string &message);
+
+    /* ── Command Dispatcher (設計書 04 §3) ──
+       Parser が生成した Message を登録状態に応じて各 Handler へ振り分ける。
+       command は Parser が ASCII 大文字化済みであることを前提とする。
+       FD が不在なら何もしない */
+    void dispatchCommand(int fd, const Message &message);
 
 private:
-    /* ── サーバー状態 ─────────────────────── */
-    int                         _port;
-    std::string                 _password;
-    int                         _serverFd;
-    bool                        _running;
+    typedef void (Server::*CommandHandler)(int fd, const Message &message);
 
-    std::vector<struct pollfd>      _fds;
-    std::map<int, Client*>          _clients;   /* fd → Client */
-    std::map<std::string, Channel*> _channels;  /* name → Channel */
+    /* 設計書 02 §4.10 の Command Handler 群。
+       現状は全て空スタブで、handler/ 配下の実装タスクで置き換える */
+    void handlePass(int fd, const Message &message);
+    void handleNick(int fd, const Message &message);
+    void handleUser(int fd, const Message &message);
+    void handleJoin(int fd, const Message &message);
+    void handlePrivmsg(int fd, const Message &message);
+    void handleKick(int fd, const Message &message);
+    void handleInvite(int fd, const Message &message);
+    void handleTopic(int fd, const Message &message);
+    void handleMode(int fd, const Message &message);
+    void handlePing(int fd, const Message &message);
+    void handlePong(int fd, const Message &message);
+    void handleQuit(int fd, const Message &message);
+    void handlePart(int fd, const Message &message);
+    void handleCap(int fd, const Message &message);
 
-    /* ── ネットワーク層 ───────────────────── */
-    void _setupServer();
-    void _acceptClient();
-    void _recvData(int fd);
-    void _sendData(int fd);
-    void _disconnectClient(int fd, const std::string& reason = "");
-
-    /* pollfd 管理 */
-    void _addPollFd(int fd, short events);
-    void _removePollFd(int fd);
-    void _setPollOut(int fd, bool enable);
-
-    /* ── IRC メッセージ処理 ───────────────── */
-    void _processBuffer(Client* client);
-    void _dispatch(Client* client, const std::string& line);
-
-    /* ── コマンドハンドラ ─────────────────── */
-    void _cmdPass   (Client* client, const std::vector<std::string>& args);
-    void _cmdNick   (Client* client, const std::vector<std::string>& args);
-    void _cmdUser   (Client* client, const std::vector<std::string>& args);
-    void _cmdJoin   (Client* client, const std::vector<std::string>& args);
-    void _cmdPart   (Client* client, const std::vector<std::string>& args);
-    void _cmdPrivmsg(Client* client, const std::vector<std::string>& args);
-    void _cmdNotice (Client* client, const std::vector<std::string>& args);
-    void _cmdKick   (Client* client, const std::vector<std::string>& args);
-    void _cmdInvite (Client* client, const std::vector<std::string>& args);
-    void _cmdTopic  (Client* client, const std::vector<std::string>& args);
-    void _cmdMode   (Client* client, const std::vector<std::string>& args);
-    void _cmdQuit   (Client* client, const std::vector<std::string>& args);
-    void _cmdPing   (Client* client, const std::vector<std::string>& args);
-    void _cmdWho    (Client* client, const std::vector<std::string>& args);
-
-    /* ── ヘルパー ─────────────────────────── */
-    void        _sendWelcome(Client* client);
-    Channel*    _getOrCreateChannel(const std::string& name);
-    Client*     _getClientByNick(const std::string& nick);
-    void        _partChannel(Client* client, Channel* channel,
-                             const std::string& reason);
-
-    /* IRC 数値リプライを送信 */
-    void _reply(Client* client, const std::string& msg);
-    void _numericReply(Client* client, int num, const std::string& msg);
-    /* エラーリプライ */
-    void _errorReply(Client* client, int num, const std::string& msg);
-
-    /* ── 静的ユーティリティ ──────────────── */
-    static std::vector<std::string> _parseArgs(const std::string& line);
-    static bool _validNick(const std::string& nick);
-    static bool _validChannel(const std::string& name);
-    static std::string _toUpper(const std::string& s);
-    static std::string _itoa(int n);
-
-    /* IRC サーバー名 */
-    static const std::string SERVNAME;
+    int                   _port;       /* 設計書 02 §4.2 */
+    std::string           _password;   /* 同上 */
+    std::string           _serverName; /* 固定値 "ircserv.local" (同上) */
+    std::map<int, Client> _clients;    /* FD → Client の所有 Map (同上) */
 };
