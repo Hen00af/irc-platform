@@ -150,3 +150,4 @@ re: fclean all
 .PHONY: all test test-ircutil test-bufferutil test-client test-channel \
         test-parser test-reply test-asan mutation spec report \
         clean fclean re
+
