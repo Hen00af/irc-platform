@@ -58,6 +58,7 @@ TARGET_SRCS = ../prd/domain/Client.cpp \
               ../prd/interface/Server.cpp \
               ../prd/interface/ServerRelations.cpp \
               ../prd/interface/ServerDispatch.cpp \
+              ../prd/interface/ServerNetwork.cpp \
               ../prd/handler/ServerAuthCommands.cpp \
               ../prd/handler/ServerChannelCommands.cpp \
               ../prd/handler/ServerMessageCommands.cpp \
