@@ -4,6 +4,7 @@ prd/*.o
 prd/interface/*.o
 prd/domain/*.o
 prd/util/*.o
+prd/handler/*.o
 
 # Unit test artifacts
 tests/run_tests

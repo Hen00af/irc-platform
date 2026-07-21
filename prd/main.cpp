@@ -1,69 +1,88 @@
-#include <iostream>
 #include <cstdlib>
-#include <csignal>
-#include <stdexcept>
+#include <exception>
+#include <iostream>
+#include <string>
 
 #include "interface/Server.hpp"
 
 /* ============================================================
- * シグナルハンドラ
+ * エントリポイント (設計書 03 §2)
  *
- * SIGINT / SIGTERM を受け取ったら server->stop() を呼ぶ。
- * poll() のタイムアウト (100ms) 後にループが終了する。
+ * ./ircserv <port> <password>
  * ============================================================ */
-static Server* g_server = NULL;
-
-static void signalHandler(int signum)
+namespace
 {
-    (void)signum;
-    if (g_server)
-        g_server->stop();
+    void printUsage(const char *programName)
+    {
+        std::cerr << "Usage: " << programName << " <port> <password>"
+                  << std::endl;
+    }
+
+    bool isAllDigits(const std::string &value)
+    {
+        if (value.empty())
+            return false;
+        for (std::string::size_type i = 0; i < value.size(); ++i)
+        {
+            if (value[i] < '0' || value[i] > '9')
+                return false;
+        }
+        return true;
+    }
+
+    /* 空文字・非数字を拒否したうえで std::strtol() (overflow 安全) で
+       変換し、1〜65535 の範囲を確認する (設計書 03 §2 手順 2〜5) */
+    bool parsePort(const std::string &value, int &port)
+    {
+        if (!isAllDigits(value))
+            return false;
+
+        char     *end    = NULL;
+        long      parsed = std::strtol(value.c_str(), &end, 10);
+
+        if (end == NULL || *end != '\0')
+            return false;
+        if (parsed < 1 || parsed > 65535)
+            return false;
+        port = static_cast<int>(parsed);
+        return true;
+    }
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char **argv)
 {
     if (argc != 3)
     {
-        std::cerr << "Usage: " << argv[0] << " <port> <password>" << std::endl;
+        printUsage(argv[0]);
         return 1;
     }
 
-    /* ポート番号の検証 */
-    char* end;
-    long port = std::strtol(argv[1], &end, 10);
-    if (*end != '\0' || port <= 0 || port > 65535)
+    int port = 0;
+
+    if (!parsePort(argv[1], port))
     {
-        std::cerr << "Error: Invalid port \"" << argv[1]
-                  << "\". Use a number between 1 and 65535." << std::endl;
+        printUsage(argv[0]);
         return 1;
     }
 
-    /* パスワードの検証 */
     std::string password = argv[2];
+
     if (password.empty())
     {
-        std::cerr << "Error: Password cannot be empty." << std::endl;
+        printUsage(argv[0]);
         return 1;
     }
-
-    /* シグナル設定 */
-    std::signal(SIGINT,  signalHandler);
-    std::signal(SIGTERM, signalHandler);
-    std::signal(SIGPIPE, SIG_IGN); /* 切断済みクライアントへの write を無視 */
 
     try
     {
-        Server server(static_cast<int>(port), password);
-        g_server = &server;
+        Server server(port, password);
+
         server.run();
-        g_server = NULL;
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
-        std::cerr << "Fatal: " << e.what() << std::endl;
+        std::cerr << "ircserv: " << e.what() << std::endl;
         return 1;
     }
-
-    std::cout << "\n[" << argv[0] << "] Server stopped." << std::endl;
     return 0;
 }

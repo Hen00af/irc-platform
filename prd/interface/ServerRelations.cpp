@@ -1,5 +1,6 @@
 #include <cstddef>
 #include <set>
+#include <unistd.h>
 #include <utility>
 
 #include "../util/IrcUtil.hpp"
@@ -48,15 +49,31 @@ const Client *Server::findClientByFd(int fd) const
 
 void Server::queueToClient(int fd, const std::string &message)
 {
+    /* 送信待ちが 1 MiB を超える Client は読み取り速度が極端に遅いか
+       応答不能と判断し、追加予定 message を破棄して切断予約する。他
+       Client と Server は継続する (設計書 03 §16) */
+    static const std::size_t MAX_SEND_BUFFER = 1048576;
+
     Client *client = findClientByFd(fd);
 
     if (client == NULL)
         return;
-    if (message.size() >= 2
-        && message.compare(message.size() - 2, 2, "\r\n") == 0)
-        client->appendSendBuffer(message);
-    else
-        client->appendSendBuffer(message + "\r\n");
+
+    std::string normalized = (message.size() >= 2
+                              && message.compare(message.size() - 2, 2,
+                                                 "\r\n") == 0)
+                                  ? message
+                                  : message + "\r\n";
+
+    if (client->getSendBuffer().size() + normalized.size() > MAX_SEND_BUFFER)
+    {
+        scheduleDisconnect(fd);
+        return;
+    }
+    client->appendSendBuffer(normalized);
+    /* pollfd の POLLOUT を有効化する (設計書 03 §14)。_pollFds に該当
+       fd が無い (単体テストなど) 場合は何もしない */
+    updatePollEvents(fd);
 }
 
 Client *Server::findClientByNickname(const std::string &nickname)
@@ -308,11 +325,14 @@ void Server::disconnectClient(int fd, const std::string &reason)
        の削除 (設計書 03 §18 手順 6〜9) */
     removeClientFromAllChannels(fd, reason);
 
-    /* Nickname 索引の削除 (設計書 03 §18 手順 10)。pollfd 一覧からの
-       削除 (手順 11) と close(fd) (手順 12) は FD をまだ所有しないため
-       行わない。ネットワーク層の実装時に追加すること */
+    /* Nickname 索引の削除 (設計書 03 §18 手順 10) */
     if (!client->getNickname().empty())
         unregisterNickname(client->getNickname());
+
+    /* pollfd 一覧からの削除は close() より前に行う。FD 再利用対策
+       (設計書 03 §18 手順 11〜12、FD再利用対策) */
+    removeClientPollFd(fd);
+    close(fd);
 
     /* _disconnectReasons の該当エントリと Client Map から削除する
        (設計書 03 §18 手順 13、本 spec の決定事項で理由 Map も削除) */
