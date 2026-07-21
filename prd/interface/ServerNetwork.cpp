@@ -104,6 +104,11 @@ void Server::run()
 
     std::signal(SIGINT, handleStopSignal);
     std::signal(SIGTERM, handleStopSignal);
+    /* send() は相手が読み取り側を閉じた後の書き込みで SIGPIPE を送る。
+       既定動作はプロセス終了のため、無視して send() の戻り値 (-1,
+       errno=EPIPE) で切断処理させる (flushSendBuffer が scheduleDisconnect
+       する) */
+    std::signal(SIGPIPE, SIG_IGN);
 
     eventLoop();
 }
