@@ -66,6 +66,12 @@ Stop the stack:
 docker compose -f deploy/docker-compose.yml down
 ```
 
+Follow structured gateway and IRC errors:
+
+```sh
+docker compose -f deploy/docker-compose.yml logs -f relay
+```
+
 ## Run without Docker
 
 Requirements: a C++ compiler, Make, Node.js 22+, and npm.

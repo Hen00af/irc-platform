@@ -25,6 +25,17 @@ const history = new ChannelHistory({
   replayLimit: HISTORY_REPLAY_LIMIT
 });
 
+function log(level, event, details = {}) {
+  console[level](
+    JSON.stringify({
+      timestamp: new Date().toISOString(),
+      service: "gateway",
+      event,
+      ...details
+    })
+  );
+}
+
 function json(ws, payload) {
   if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
 }
@@ -150,6 +161,13 @@ wss.on("connection", (ws) => {
         });
         irc.on("message", (event) => {
           const payload = publicEvent(event);
+          if (payload.type === "error") {
+            log("warn", "irc_error", {
+              code: payload.code,
+              command: payload.params[1] || "",
+              message: payload.text
+            });
+          }
           json(ws, payload);
           if (event.command === "001") {
             irc.join(joinedChannel);
@@ -167,10 +185,14 @@ wss.on("connection", (ws) => {
             });
           }
         });
-        irc.on("error", (error) =>
-          json(ws, { type: "error", message: error.message })
-        );
-        irc.on("close", () => json(ws, { type: "disconnected" }));
+        irc.on("error", (error) => {
+          log("error", "irc_connection_error", { message: error.message });
+          json(ws, { type: "error", message: error.message });
+        });
+        irc.on("close", () => {
+          log("info", "irc_disconnected");
+          json(ws, { type: "disconnected" });
+        });
         irc.connect();
         json(ws, { type: "connecting" });
         return;
@@ -207,6 +229,7 @@ wss.on("connection", (ws) => {
           throw new Error("Unsupported action");
       }
     } catch (error) {
+      log("warn", "client_action_rejected", { message: error.message });
       json(ws, { type: "error", message: error.message });
     }
   });
