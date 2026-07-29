@@ -39,6 +39,7 @@ int main() {
         "    allow_methods GET POST;\n"
         "    cgi_extension .py;\n"
         "    cgi_path /usr/bin/python3;\n"
+        "    cgi_handler .php /usr/bin/php-cgi;\n"
         "    cgi_timeout 12;\n"
         "    return 302 /moved;\n"
         "  }\n"
@@ -72,6 +73,10 @@ int main() {
         expect(location.cgiExtension == ".py" &&
                    location.cgiPath == "/usr/bin/python3",
                "CGI configuration should parse as a pair");
+        expect(location.cgiHandlers.size() == 2 &&
+                   location.cgiHandlers.find(".php")->second ==
+                       "/usr/bin/php-cgi",
+               "multiple CGI handlers should parse");
         expect(location.cgiTimeout == 12, "CGI timeout should parse");
     } catch (const std::exception &error) {
         std::cerr << "FAIL: valid configuration threw: " << error.what() << std::endl;
@@ -103,6 +108,10 @@ int main() {
                       "server { listen 8080; location /cgi { "
                       "cgi_timeout 0; } }"),
            "zero CGI timeout should fail");
+    expect(parseFails(path,
+                      "server { listen 8080; location /cgi { "
+                      "cgi_handler .py /a; cgi_handler .py /b; } }"),
+           "duplicate CGI handler extension should fail");
     expect(parseFails(path, "server { root www; }"),
            "missing listen directive should fail");
 

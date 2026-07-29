@@ -77,13 +77,21 @@ server {
         allow_methods GET POST DELETE;
         upload_dir www/uploads;
     }
+
+    location /cgi-bin {
+        root www/cgi-bin;
+        allow_methods GET POST;
+        cgi_handler .py /usr/bin/python3;
+        cgi_handler .php /usr/bin/php-cgi;
+        cgi_timeout 3;
+    }
 }
 ```
 
 Server directives are `listen`, `root`, `index`, `client_max_body_size`,
 `autoindex`, `allow_methods`, and `error_page`. Location directives are `root`,
 `index`, `autoindex`, `allow_methods`, `return`, `upload_dir`,
-`cgi_extension`, `cgi_path`, and `cgi_timeout`. A redirect may be written as
+`cgi_extension`, `cgi_path`, `cgi_handler`, and `cgi_timeout`. A redirect may be written as
 `return /target;` or `return 302 /target;`. CGI extension and executable path
 must be configured together.
 
@@ -128,6 +136,21 @@ curl 'http://localhost:8080/cgi-bin/echo.py?name=webserv'
 curl -X POST --data-binary 'hello CGI' \
   http://localhost:8080/cgi-bin/echo.py
 ```
+
+The bundled CGI demonstrations are:
+
+| Script | Demonstrates |
+|---|---|
+| `hello.py` | minimal CGI response |
+| `echo.py` | request method, query, body, and environment |
+| `form.py` | GET query and POST body handling |
+| `status.py` | custom CGI `Status` response |
+| `redirect.py` | `302` and `Location` |
+| `cookie.py` | `Set-Cookie` |
+| `session.py` | cookie-based session identifier |
+| `error.py` | abnormal process exit and `500` |
+| `slow.py` | asynchronous execution and `504` timeout |
+| `hello.php` | PHP-CGI runtime selection |
 
 ## Deployment notes
 

@@ -36,6 +36,7 @@ struct Location {
     std::string uploadDir;
     std::string cgiExtension;
     std::string cgiPath;
+    std::map<std::string, std::string> cgiHandlers;
     size_t cgiTimeout;
     bool autoindex;
     std::vector<std::string> methods;
