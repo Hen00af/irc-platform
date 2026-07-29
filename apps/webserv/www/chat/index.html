@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#12213d">
+    <title>Relay — browser IRC</title>
+    <link rel="stylesheet" href="/chat/styles.css">
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="network-rail" aria-label="Connection path">
+        <a class="brand" href="/chat/" aria-label="Relay home">
+          <span class="brand-mark">R</span>
+          <span class="brand-name">Relay</span>
+        </a>
+
+        <div class="route" aria-live="polite">
+          <div class="route-stop is-live" data-hop="browser">
+            <span class="route-node"></span>
+            <div>
+              <strong>Browser</strong>
+              <span>This tab</span>
+            </div>
+          </div>
+          <div class="route-wire"><i></i></div>
+          <div class="route-stop" data-hop="gateway">
+            <span class="route-node"></span>
+            <div>
+              <strong>Gateway</strong>
+              <span>WebSocket</span>
+            </div>
+          </div>
+          <div class="route-wire"><i></i></div>
+          <div class="route-stop" data-hop="irc">
+            <span class="route-node"></span>
+            <div>
+              <strong>IRC</strong>
+              <span>TCP engine</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="connection-copy">
+          <span class="status-dot"></span>
+          <span id="connection-label">Offline</span>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">LIVE CHANNEL</p>
+            <h1 id="channel-title">#lobby</h1>
+          </div>
+          <div class="top-actions">
+            <button class="quiet-button" id="change-channel" type="button">
+              Change channel
+            </button>
+            <button class="avatar-button" id="change-nick" type="button" aria-label="Change nickname">
+              <span id="avatar-letter">?</span>
+            </button>
+          </div>
+        </header>
+
+        <section class="conversation" aria-label="Channel messages">
+          <ol id="messages" class="message-list" aria-live="polite">
+            <li class="system-message">
+              <span>Relay is ready.</span>
+              Connect to enter the channel.
+            </li>
+          </ol>
+
+          <form id="composer" class="composer">
+            <label class="sr-only" for="message-input">Message</label>
+            <textarea
+              id="message-input"
+              rows="1"
+              maxlength="420"
+              placeholder="Write to #lobby"
+              disabled
+            ></textarea>
+            <div class="composer-meta">
+              <span><kbd>Enter</kbd> send · <kbd>Shift</kbd> + <kbd>Enter</kbd> newline</span>
+              <button type="submit" disabled>Send</button>
+            </div>
+          </form>
+        </section>
+
+        <aside class="people-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">ON THIS FREQUENCY</p>
+              <h2>People</h2>
+            </div>
+            <span id="member-count">0</span>
+          </div>
+          <ul id="members" class="member-list"></ul>
+          <div class="protocol-note">
+            <span>IRC/1.0</span>
+            <p>Messages travel through your own C++ server.</p>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <dialog id="connect-dialog" class="connect-dialog">
+      <form id="connect-form" method="dialog">
+        <div class="dialog-route" aria-hidden="true">
+          <span></span><i></i><span></span><i></i><span></span>
+        </div>
+        <p class="eyebrow">OPEN A CONNECTION</p>
+        <h2>Choose how you appear.</h2>
+        <p class="dialog-copy">
+          Your nickname is sent to the IRC server. No account is required.
+        </p>
+
+        <label for="nickname">Nickname</label>
+        <input
+          id="nickname"
+          name="nickname"
+          autocomplete="nickname"
+          pattern="[A-Za-z][A-Za-z0-9_\-\[\]{}\\`^]{0,8}"
+          maxlength="9"
+          placeholder="Alice"
+          required
+        >
+
+        <label for="channel">Channel</label>
+        <input
+          id="channel"
+          name="channel"
+          value="#lobby"
+          pattern="#[A-Za-z0-9_\-]{1,49}"
+          maxlength="50"
+          required
+        >
+
+        <p id="connect-error" class="form-error" role="alert"></p>
+        <button class="primary-button" type="submit">Enter channel</button>
+      </form>
+    </dialog>
+
+    <script src="/chat/app.js" type="module"></script>
+  </body>
+</html>
