@@ -36,11 +36,11 @@ test: $(TEST_BINS)
 	./.obj/cgi_handler_test
 
 integration-test: all
-	sh tests/CgiIntegrationTest.sh
-	sh tests/AdminUiTest.sh
+	sh tests/integration/CgiIntegrationTest.sh
+	sh tests/integration/AdminUiTest.sh
 
 stress-test: all
-	sh tests/StressTest.sh
+	sh tests/integration/StressTest.sh
 
 docker-build:
 	docker compose build
@@ -53,22 +53,22 @@ $(TEST_BINS): | .obj
 .obj:
 	@mkdir -p $@
 
-.obj/router_test: tests/RouterTest.cpp src/Router.cpp src/Config.cpp
+.obj/router_test: tests/unit/RouterTest.cpp src/Router.cpp src/Config.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@
 
-.obj/config_test: tests/ConfigTest.cpp src/Config.cpp
+.obj/config_test: tests/unit/ConfigTest.cpp src/Config.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@
 
-.obj/http_test: tests/HttpTest.cpp src/Http.cpp src/Config.cpp
+.obj/http_test: tests/unit/HttpTest.cpp src/Http.cpp src/Config.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@
 
-.obj/dispatcher_test: tests/DispatcherTest.cpp src/Config.cpp src/Http.cpp \
+.obj/dispatcher_test: tests/unit/DispatcherTest.cpp src/Config.cpp src/Http.cpp \
 	src/Router.cpp src/ResponseFactory.cpp src/FileSystem.cpp \
 	src/StaticHandler.cpp src/UploadHandler.cpp src/DeleteHandler.cpp \
 	src/Dispatcher.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@
 
-.obj/cgi_handler_test: tests/CgiHandlerTest.cpp src/CgiHandler.cpp \
+.obj/cgi_handler_test: tests/unit/CgiHandlerTest.cpp src/CgiHandler.cpp \
 	src/ResponseFactory.cpp src/Http.cpp src/Config.cpp src/Router.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@
 

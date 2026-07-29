@@ -13,6 +13,19 @@ The repository root is the canonical, deployable implementation. Historical
 experiments remain under `prd/`, `lab/`, and `sample/` and are excluded from the
 container image.
 
+The main directories are:
+
+```text
+src/                C++ implementation
+include/            public project headers
+config/             runtime configuration
+www/                static files, Control Plane, uploads, and CGI fixtures
+tests/unit/          C++ unit and component tests
+tests/integration/   HTTP, CGI, UI, and stress test scripts
+docs/flow/           request lifecycle documentation
+docs/reference/      project reference material
+```
+
 ## Instructions
 
 Build and run locally:
