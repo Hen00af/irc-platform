@@ -12,10 +12,12 @@ std::string reasonPhrase(int status) {
         case 403: return "Forbidden";
         case 404: return "Not Found";
         case 405: return "Method Not Allowed";
+        case 409: return "Conflict";
         case 408: return "Request Timeout";
         case 411: return "Length Required";
         case 413: return "Payload Too Large";
         case 500: return "Internal Server Error";
+        case 503: return "Service Unavailable";
         case 501: return "Not Implemented";
         case 504: return "Gateway Timeout";
         case 505: return "HTTP Version Not Supported";
@@ -36,21 +38,48 @@ std::string Response::serialize() const {
 }
 
 static bool decodePath(const std::string &input, std::string &output) {
-    output.clear();
+    std::string decoded;
     for (size_t i = 0; i < input.size(); ++i) {
-        if (input[i] == '%' && i + 2 < input.size()) {
-            std::istringstream hex(input.substr(i + 1, 2));
-            unsigned int value;
-            hex >> std::hex >> value;
-            if (hex.fail() || value == 0)
+        if (input[i] == '%') {
+            if (i + 2 >= input.size())
                 return false;
-            output += static_cast<char>(value);
+            std::istringstream hex(input.substr(i + 1, 2));
+            unsigned int value = 0;
+            char extra;
+            hex >> std::hex >> value;
+            if (hex.fail() || hex >> extra || value == 0 || value < 0x20 ||
+                value == 0x7f)
+                return false;
+            decoded += static_cast<char>(value);
             i += 2;
         } else {
-            output += input[i];
+            const unsigned char value = static_cast<unsigned char>(input[i]);
+            if (value < 0x20 || value == 0x7f || input[i] == '\\')
+                return false;
+            decoded += input[i];
         }
     }
-    return output.find("..") == std::string::npos;
+    output = "/";
+    size_t position = 1;
+    while (position <= decoded.size()) {
+        const size_t slash = decoded.find('/', position);
+        const size_t end = slash == std::string::npos ? decoded.size() : slash;
+        const std::string segment = decoded.substr(position, end - position);
+        if (segment == "..")
+            return false;
+        if (!segment.empty() && segment != ".") {
+            if (output.size() > 1)
+                output += "/";
+            output += segment;
+        }
+        if (slash == std::string::npos)
+            break;
+        position = slash + 1;
+    }
+    if (decoded.size() > 1 && decoded[decoded.size() - 1] == '/' &&
+        output[output.size() - 1] != '/')
+        output += "/";
+    return true;
 }
 
 static bool parseChunked(const std::string &input, std::string &body, bool &complete) {

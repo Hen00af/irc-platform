@@ -1,4 +1,5 @@
 #include "UploadHandler.hpp"
+#include "FileSystem.hpp"
 #include "ResponseFactory.hpp"
 
 static bool validFileName(const std::string &name) {
@@ -18,12 +19,13 @@ Response UploadHandler::handle(const Request &request, const RouteResult &route,
     if (!validFileName(name))
         return ResponseFactory::error(400, config);
 
-    std::ofstream output((route.location->uploadDir + "/" + name).c_str(),
-                         std::ios::out | std::ios::binary | std::ios::trunc);
-    if (!output)
-        return ResponseFactory::error(500, config);
-    output.write(request.body.data(), request.body.size());
-    if (!output)
+    const FileResult result = FileSystem::createExclusive(
+        route.location->uploadDir, name, request.body);
+    if (result == FILE_CONFLICT)
+        return ResponseFactory::error(409, config);
+    if (result == FILE_FORBIDDEN)
+        return ResponseFactory::error(403, config);
+    if (result != FILE_OK)
         return ResponseFactory::error(500, config);
 
     Response response(201);

@@ -7,8 +7,15 @@ services:
       - "${WEBSERV_PORT:-8080}:8080"
     restart: unless-stopped
     read_only: true
+    pids_limit: 128
+    mem_limit: 512m
+    cpus: "1.0"
+    ulimits:
+      nofile:
+        soft: 2048
+        hard: 2048
     tmpfs:
-      - /tmp
+      - /tmp:size=32m,noexec,nosuid
     volumes:
       - uploads:/app/www/uploads
     security_opt:

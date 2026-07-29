@@ -1,10 +1,15 @@
 #include "Webserv.hpp"
 #include "CgiHandler.hpp"
 #include "Dispatcher.hpp"
+#include "FileSystem.hpp"
 #include "ResponseFactory.hpp"
 #include "Router.hpp"
 
 bool serverRunning();
+
+static const size_t MAX_CONNECTIONS = 128;
+static const size_t MAX_CGI_PROCESSES = 16;
+static const size_t MAX_HEADER_OVERHEAD = 65536;
 
 Server::Client::Client()
     : fd(-1), config(NULL), sent(0), touched(0), cgiPid(-1),
@@ -103,6 +108,10 @@ void Server::acceptClient(size_t index) {
                 return;
             return;
         }
+        if (_clients.size() >= MAX_CONNECTIONS) {
+            close(fd);
+            continue;
+        }
         try {
             nonBlocking(fd);
         } catch (...) {
@@ -132,17 +141,32 @@ bool Server::startCgi(size_t index, const Request &request) {
     const RouteResult route = Router::resolve(request, *client.config);
     if (route.status != ROUTE_READY || !CgiHandler::matches(route))
         return false;
+    size_t runningCgi = 0;
+    for (std::map<int, Client>::const_iterator it = _clients.begin();
+         it != _clients.end(); ++it)
+        if (it->second.cgiPid > 0)
+            ++runningCgi;
+    if (runningCgi >= MAX_CGI_PROCESSES) {
+        client.output =
+            ResponseFactory::error(503, *client.config).serialize();
+        client.phase = CLIENT_WRITING;
+        _pollfds[index].events = POLLOUT;
+        return true;
+    }
 
-    struct stat scriptInfo;
-    if (stat(route.diskPath.c_str(), &scriptInfo) != 0 ||
-        !S_ISREG(scriptInfo.st_mode)) {
-        client.output = ResponseFactory::error(404, *client.config).serialize();
+    RouteResult securedRoute = route;
+    const FileResult scriptResult = FileSystem::resolveExisting(
+        route.location->root, route.diskPath, securedRoute.diskPath);
+    if (scriptResult != FILE_OK) {
+        const int status = scriptResult == FILE_NOT_FOUND ? 404 : 403;
+        client.output =
+            ResponseFactory::error(status, *client.config).serialize();
         client.phase = CLIENT_WRITING;
         _pollfds[index].events = POLLOUT;
         return true;
     }
     CgiProcess process;
-    if (!CgiHandler::start(request, route, *client.config, process)) {
+    if (!CgiHandler::start(request, securedRoute, *client.config, process)) {
         client.output = ResponseFactory::error(500, *client.config).serialize();
         _pollfds[index].events = POLLOUT;
         return true;
@@ -191,7 +215,20 @@ void Server::readClient(size_t index) {
         closeClient(fd);
         return;
     }
-    client.input.append(buffer, static_cast<size_t>(count));
+    const size_t incoming = static_cast<size_t>(count);
+    const size_t requestLimit =
+        client.config->maxBody > std::numeric_limits<size_t>::max() -
+                                     MAX_HEADER_OVERHEAD
+            ? std::numeric_limits<size_t>::max()
+            : client.config->maxBody + MAX_HEADER_OVERHEAD;
+    if (client.input.size() > requestLimit - incoming) {
+        client.output =
+            ResponseFactory::error(413, *client.config).serialize();
+        client.phase = CLIENT_WRITING;
+        _pollfds[index].events = POLLOUT;
+        return;
+    }
+    client.input.append(buffer, incoming);
     client.touched = std::time(NULL);
     Request request;
     const ParseResult result =

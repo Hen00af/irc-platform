@@ -14,11 +14,13 @@
 #include <map>
 #include <netinet/in.h>
 #include <limits>
+#include <limits.h>
 #include <poll.h>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <sys/socket.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>

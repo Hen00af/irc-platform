@@ -1,4 +1,5 @@
 #include "StaticHandler.hpp"
+#include "FileSystem.hpp"
 #include "ResponseFactory.hpp"
 
 static std::string mimeType(const std::string &path) {
@@ -14,16 +15,6 @@ static std::string mimeType(const std::string &path) {
     if (ext == ".svg") return "image/svg+xml";
     if (ext == ".txt") return "text/plain; charset=utf-8";
     return "application/octet-stream";
-}
-
-static bool readFile(const std::string &path, std::string &body) {
-    std::ifstream file(path.c_str(), std::ios::in | std::ios::binary);
-    if (!file)
-        return false;
-    std::ostringstream content;
-    content << file.rdbuf();
-    body = content.str();
-    return true;
 }
 
 static std::string escapeHtml(const std::string &text) {
@@ -52,6 +43,10 @@ static bool directoryListing(const std::string &disk, const std::string &uri,
             continue;
         body += "<li><a href=\"" + escapeHtml(name) + "\">" +
                 escapeHtml(name) + "</a></li>";
+        if (body.size() > 1024 * 1024) {
+            closedir(directory);
+            return false;
+        }
     }
     closedir(directory);
     body += "</ul></body></html>";
@@ -60,9 +55,19 @@ static bool directoryListing(const std::string &disk, const std::string &uri,
 
 Response StaticHandler::handle(const Request &request, const RouteResult &route,
                                const ServerConfig &config) {
-    struct stat info;
-    if (stat(route.diskPath.c_str(), &info) != 0)
+    const std::string &root =
+        route.location ? route.location->root : config.root;
+    std::string resolved;
+    const FileResult resolvedResult =
+        FileSystem::resolveExisting(root, route.diskPath, resolved);
+    if (resolvedResult == FILE_NOT_FOUND)
         return ResponseFactory::error(404, config);
+    if (resolvedResult != FILE_OK)
+        return ResponseFactory::error(403, config);
+
+    struct stat info;
+    if (stat(resolved.c_str(), &info) != 0)
+        return ResponseFactory::error(403, config);
 
     std::string filePath = route.diskPath;
     if (S_ISDIR(info.st_mode)) {
@@ -77,22 +82,35 @@ Response StaticHandler::handle(const Request &request, const RouteResult &route,
         if (!index.empty() && filePath[filePath.size() - 1] != '/')
             filePath += "/";
         filePath += index;
-        if (index.empty() || stat(filePath.c_str(), &info) != 0) {
+        std::string resolvedIndex;
+        const FileResult indexResult =
+            index.empty() ? FILE_NOT_FOUND
+                          : FileSystem::resolveExisting(root, filePath, resolvedIndex);
+        if (indexResult != FILE_OK) {
+            if (indexResult == FILE_FORBIDDEN)
+                return ResponseFactory::error(403, config);
             const bool autoindex =
                 route.location ? route.location->autoindex : config.autoindex;
             if (!autoindex)
                 return ResponseFactory::error(403, config);
             Response response(200);
-            if (!directoryListing(route.diskPath, request.path, response.body))
+            if (!directoryListing(resolved, request.path, response.body))
                 return ResponseFactory::error(403, config);
             response.headers["Content-Type"] = "text/html; charset=utf-8";
             return response;
         }
+        resolved = resolvedIndex;
+        if (stat(resolved.c_str(), &info) != 0)
+            return ResponseFactory::error(403, config);
     }
     if (!S_ISREG(info.st_mode))
         return ResponseFactory::error(403, config);
     Response response(200);
-    if (!readFile(filePath, response.body))
+    const FileResult readResult =
+        FileSystem::readRegular(resolved, response.body);
+    if (readResult == FILE_TOO_LARGE)
+        return ResponseFactory::error(413, config);
+    if (readResult != FILE_OK)
         return ResponseFactory::error(403, config);
     response.headers["Content-Type"] = mimeType(filePath);
     return response;

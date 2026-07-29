@@ -25,6 +25,8 @@ static Request makeRequest(const std::string &method, const std::string &path) {
 
 static void cleanup(const std::string &root) {
     unlink((root + "/uploads/new.txt").c_str());
+    unlink((root + "/uploads/link.txt").c_str());
+    unlink((root + "/escape").c_str());
     unlink((root + "/hello.txt").c_str());
     unlink((root + "/404.html").c_str());
     rmdir((root + "/uploads").c_str());
@@ -76,6 +78,11 @@ int main() {
     expect(response.status == 404, "missing file should return 404");
     expect(response.body == "custom not found\n", "404 should use configured error page");
 
+    expect(symlink("/etc/passwd", (root + "/escape").c_str()) == 0,
+           "escape symlink fixture should be created");
+    response = Dispatcher::dispatch(makeRequest("GET", "/escape"), config);
+    expect(response.status == 403, "symlink target should not be served");
+
     response = Dispatcher::dispatch(makeRequest("GET", "/upload"), config);
     expect(response.status == 301, "directory without trailing slash should redirect");
     expect(response.headers["Location"] == "/upload/",
@@ -94,6 +101,9 @@ int main() {
     expect(response.headers["Location"] == "/upload/new.txt",
            "upload should return resource location");
 
+    response = Dispatcher::dispatch(post, config);
+    expect(response.status == 409, "upload must not overwrite an existing file");
+
     response = Dispatcher::dispatch(makeRequest("GET", "/upload/new.txt"), config);
     expect(response.status == 200, "uploaded file should be readable");
     expect(response.body == "uploaded body\n", "uploaded body should be preserved");
@@ -106,6 +116,12 @@ int main() {
     post.headers["x-filename"] = "../escape.txt";
     response = Dispatcher::dispatch(post, config);
     expect(response.status == 400, "unsafe upload filename should return 400");
+
+    expect(symlink(root.c_str(), (root + "/uploads/link.txt").c_str()) == 0,
+           "upload symlink fixture should be created");
+    post.headers["x-filename"] = "link.txt";
+    response = Dispatcher::dispatch(post, config);
+    expect(response.status == 409, "upload must not follow an existing symlink");
 
     response = Dispatcher::dispatch(makeRequest("PUT", "/hello.txt"), config);
     expect(response.status == 405, "disallowed method should return 405");

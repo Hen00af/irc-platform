@@ -84,6 +84,10 @@ int main() {
            "duplicate directive should fail");
     expect(parseFails(path, "server { listen 8080; client_max_body_size -1; }"),
            "negative number should fail");
+    expect(parseFails(path,
+                      "server { listen 8080; "
+                      "client_max_body_size 16777217; }"),
+           "body limit above security cap should fail");
     expect(parseFails(path, "server { listen localhost:8080; }"),
            "non-IPv4 listen host should fail");
     expect(parseFails(path,

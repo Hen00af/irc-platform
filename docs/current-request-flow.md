@@ -185,6 +185,10 @@ Dispatcherは最終的に「どのhandlerを呼ぶか」だけを担当し、
 - CGI stdin/stdoutはnon-blocking pipeとしてsocketと同じpoll loopで管理する。
 - CGIはlocationの`cgi_timeout`（既定30秒）でtimeoutし、504を返す。
 - CGI出力は16 MiBを上限とする。
+- client接続は128、同時CGIは16を上限とする。
+- request bodyと静的response fileは16 MiBを上限とする。
+- canonical pathがdocument root外へ出る場合とsymlink targetを拒否する。
+- uploadは排他的に新規作成し、既存file・symlinkを上書きしない。
 - Hostによるvirtual server選択はまだ行っていない。
 - parse errorの400/413はDispatcherを通らず、Serverが生成する。
 

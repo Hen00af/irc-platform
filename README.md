@@ -91,6 +91,27 @@ The parser rejects malformed blocks, missing semicolons, duplicate singleton
 directives, invalid IPv4 listen addresses and ports, invalid numeric ranges,
 duplicate methods, duplicate listen addresses, and incomplete CGI settings.
 
+## Security boundaries
+
+The server applies the following defensive limits:
+
+- 128 simultaneous client connections;
+- 16 simultaneous CGI processes;
+- 16 MiB maximum configured request body and static response file;
+- 64 KiB request framing/header overhead;
+- 16 MiB CGI output and 1 MiB generated directory listing;
+- configurable CGI timeout, plus CGI CPU, address-space, file-size, and process
+  limits;
+- canonical document-root confinement and rejection of symlink targets;
+- exclusive uploads that never overwrite an existing file or symlink;
+- strict percent decoding, control-character rejection, and dot-segment
+  normalization.
+
+The Docker Compose profile additionally limits the container to one CPU,
+512 MiB memory, 128 processes, and 2048 file descriptors. Public deployments
+should still run behind a managed TLS terminator or reverse proxy with
+connection and rate limiting.
+
 Raw upload example:
 
 ```sh

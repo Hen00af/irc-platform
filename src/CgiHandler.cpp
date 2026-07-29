@@ -59,6 +59,13 @@ static void setNonBlocking(int fd) {
         throw std::runtime_error("cannot make CGI pipe non-blocking");
 }
 
+static void setResourceLimit(int resource, rlim_t value) {
+    struct rlimit limit;
+    limit.rlim_cur = value;
+    limit.rlim_max = value;
+    setrlimit(resource, &limit);
+}
+
 bool CgiHandler::matches(const RouteResult &route) {
     if (!route.location || route.location->cgiExtension.empty())
         return false;
@@ -132,6 +139,13 @@ bool CgiHandler::start(const Request &request, const RouteResult &route,
         const long descriptorLimit = sysconf(_SC_OPEN_MAX);
         for (int fd = 3; fd < descriptorLimit; ++fd)
             close(fd);
+        setResourceLimit(RLIMIT_CPU,
+                         static_cast<rlim_t>(route.location->cgiTimeout + 1));
+        setResourceLimit(RLIMIT_AS, static_cast<rlim_t>(256) * 1024 * 1024);
+        setResourceLimit(RLIMIT_FSIZE, static_cast<rlim_t>(17) * 1024 * 1024);
+#ifdef RLIMIT_NPROC
+        setResourceLimit(RLIMIT_NPROC, 16);
+#endif
         if (chdir(directory.c_str()) != 0)
             _exit(126);
         char *arguments[3];

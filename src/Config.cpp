@@ -314,7 +314,12 @@ class ConfigParser {
             else if (uniqueName == "index" && args.size() == 1)
                 server.index = args[0].value;
             else if (uniqueName == "client_max_body_size" && args.size() == 1)
+            {
                 server.maxBody = parseNumber(args[0]);
+                if (server.maxBody > 16 * 1024 * 1024)
+                    throw configError(args[0].line,
+                                      "client body limit exceeds 16 MiB");
+            }
             else if (uniqueName == "autoindex" && args.size() == 1)
                 server.autoindex = parseOnOff(args[0]);
             else if (uniqueName == "allow_methods")

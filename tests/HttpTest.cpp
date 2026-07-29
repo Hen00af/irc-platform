@@ -89,6 +89,31 @@ int main() {
         1024, request);
     expect(result == REQUEST_BAD, "overflowing Content-Length should be rejected");
 
+    request = Request();
+    result = parseRequest(
+        "GET /%0d%0aInjected HTTP/1.1\r\nHost: test\r\n\r\n",
+        1024, request);
+    expect(result == REQUEST_BAD,
+           "percent-encoded control characters should be rejected");
+
+    request = Request();
+    result = parseRequest("GET /bad%2 HTTP/1.1\r\nHost: test\r\n\r\n",
+                          1024, request);
+    expect(result == REQUEST_BAD, "incomplete percent encoding should be rejected");
+
+    request = Request();
+    result = parseRequest(
+        "GET /safe/./file..txt HTTP/1.1\r\nHost: test\r\n\r\n",
+        1024, request);
+    expect(result == REQUEST_OK, "safe dot-like filename should be accepted");
+    expect(request.path == "/safe/file..txt", "dot segment should be normalized");
+
+    request = Request();
+    result = parseRequest(
+        "GET /safe/%2e%2e/secret HTTP/1.1\r\nHost: test\r\n\r\n",
+        1024, request);
+    expect(result == REQUEST_BAD, "encoded parent traversal should be rejected");
+
     Response response(200);
     response.headers["Content-Type"] = "text/plain";
     response.body = "hello";

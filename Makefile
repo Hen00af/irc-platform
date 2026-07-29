@@ -3,7 +3,7 @@ CXX := c++
 CXXFLAGS := -Wall -Wextra -Werror -std=c++98 -MMD -MP
 CPPFLAGS := -Iinclude
 SRC := src/main.cpp src/Config.cpp src/Http.cpp src/Router.cpp \
-	src/ResponseFactory.cpp src/StaticHandler.cpp src/UploadHandler.cpp \
+	src/ResponseFactory.cpp src/FileSystem.cpp src/StaticHandler.cpp src/UploadHandler.cpp \
 	src/DeleteHandler.cpp src/CgiHandler.cpp src/Dispatcher.cpp src/Server.cpp
 OBJ := $(SRC:src/%.cpp=.obj/%.o)
 DEP := $(OBJ:.o=.d)
@@ -55,7 +55,7 @@ $(TEST_BINS): | .obj
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@
 
 .obj/dispatcher_test: tests/DispatcherTest.cpp src/Config.cpp src/Http.cpp \
-	src/Router.cpp src/ResponseFactory.cpp src/StaticHandler.cpp \
+	src/Router.cpp src/ResponseFactory.cpp src/FileSystem.cpp src/StaticHandler.cpp \
 	src/UploadHandler.cpp src/DeleteHandler.cpp src/Dispatcher.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@
 
