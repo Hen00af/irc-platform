@@ -6,17 +6,24 @@ import {
   validChannel,
   validNickname
 } from "./irc.js";
+import { ChannelHistory } from "./history.js";
 
 const WS_PORT = Number(process.env.WS_PORT || 3001);
 const IRC_HOST = process.env.IRC_HOST || "127.0.0.1";
 const IRC_PORT = Number(process.env.IRC_PORT || 6667);
 const IRC_PASSWORD = process.env.IRC_PASSWORD || "";
+const HISTORY_LIMIT = Number(process.env.HISTORY_LIMIT || 100);
+const HISTORY_REPLAY_LIMIT = Number(process.env.HISTORY_REPLAY_LIMIT || 50);
 const ALLOWED_ORIGINS = new Set(
   (process.env.ALLOWED_ORIGINS || "")
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean)
 );
+const history = new ChannelHistory({
+  limit: HISTORY_LIMIT,
+  replayLimit: HISTORY_REPLAY_LIMIT
+});
 
 function json(ws, payload) {
   if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
@@ -143,6 +150,18 @@ wss.on("connection", (ws) => {
             irc.join(joinedChannel);
             irc.send("WHO", [joinedChannel]);
           }
+          if (
+            event.command === "JOIN" &&
+            event.nick === irc.nickname &&
+            (event.params[0] || event.trailing) === joinedChannel
+          ) {
+            json(ws, {
+              type: "history",
+              channel: joinedChannel,
+              messages: history.recent(joinedChannel),
+              persistent: false
+            });
+          }
         });
         irc.on("error", (error) =>
           json(ws, { type: "error", message: error.message })
@@ -158,6 +177,10 @@ wss.on("connection", (ws) => {
       switch (message.type) {
         case "message":
           irc.privmsg(message.target || joinedChannel, message.text);
+          history.add(message.target || joinedChannel, {
+            nick: irc.nickname,
+            text: String(message.text).trim()
+          });
           json(ws, {
             type: "message",
             target: message.target || joinedChannel,

@@ -6,7 +6,7 @@
   "description": "WebSocket to IRC bridge for irc-platform",
   "scripts": {
     "start": "node src/server.js",
-    "test": "node --test test/irc.test.js",
+    "test": "node --test test/irc.test.js test/history.test.js",
     "test:integration": "node --test test/integration.test.js"
   },
   "dependencies": {

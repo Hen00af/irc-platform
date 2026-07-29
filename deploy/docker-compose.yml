@@ -8,6 +8,8 @@ services:
       IRC_PORT: 6667
       WS_PORT: 3001
       ALLOWED_ORIGINS: http://localhost:8080
+      HISTORY_LIMIT: ${HISTORY_LIMIT:-100}
+      HISTORY_REPLAY_LIMIT: ${HISTORY_REPLAY_LIMIT:-50}
     ports:
       - "8080:8080"
       - "3001:3001"

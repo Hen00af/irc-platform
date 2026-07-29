@@ -45,14 +45,14 @@ function setConnection(level, label) {
   });
 }
 
-function timestamp() {
+function timestamp(value) {
   return new Intl.DateTimeFormat([], {
     hour: "2-digit",
     minute: "2-digit"
-  }).format(new Date());
+  }).format(value ? new Date(value) : new Date());
 }
 
-function addMessage({ nick, text, own = false }) {
+function addMessage({ nick, text, own = false, timestamp: sentAt }) {
   if (!text) return;
   const item = document.createElement("li");
   item.className = `message${own ? " own" : ""}`;
@@ -67,7 +67,7 @@ function addMessage({ nick, text, own = false }) {
   const name = document.createElement("strong");
   name.textContent = nick || "server";
   const time = document.createElement("time");
-  time.textContent = timestamp();
+  time.textContent = timestamp(sentAt);
   const body = document.createElement("p");
   body.className = "message-body";
   body.textContent = text;
@@ -133,6 +133,19 @@ function onGatewayMessage(message) {
       addMessage(message);
       if (message.nick) state.members.add(message.nick);
       renderMembers();
+      break;
+    case "history":
+      if (message.channel !== state.channel) break;
+      if (message.messages.length) {
+        addSystem(
+          `Showing ${message.messages.length} recent in-memory messages`,
+          "HISTORY"
+        );
+        message.messages.forEach(addMessage);
+      } else {
+        addSystem("No recent messages in this channel", "HISTORY");
+      }
+      addSystem("History is cleared whenever the server restarts", "MEMORY");
       break;
     case "join":
       if (message.nick) state.members.add(message.nick);

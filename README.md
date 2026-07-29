@@ -7,6 +7,8 @@ protocol engines:
 - **ft_irc** owns channels, membership, modes, and message delivery.
 - A narrow **WebSocket gateway** lets browsers speak to IRC without exposing
   the server password or arbitrary IRC commands.
+- The gateway keeps up to 100 messages per channel in memory and replays the
+  latest 50 on join. History is intentionally cleared on restart.
 
 The source projects were imported with their Git histories. Their original 42
 repositories remain independent.
@@ -41,6 +43,9 @@ Docker runs all three processes in the same container:
 IRC_PASSWORD=choose-a-password \
   docker compose -f deploy/docker-compose.yml up --build
 ```
+
+The in-memory history limits can be changed with `HISTORY_LIMIT` and
+`HISTORY_REPLAY_LIMIT`.
 
 Open:
 

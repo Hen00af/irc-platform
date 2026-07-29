@@ -127,6 +127,17 @@ test("bridges browser messages through the real IRC server", async (t) => {
   assert.equal(delivered.nick, "Alice");
   assert.equal(delivered.target, "#lobby");
 
+  const charlie = await openClient("Charlie");
+  t.after(() => charlie.ws.close());
+  const replay = await waitForMessage(
+    charlie,
+    (message) =>
+      message.type === "history" &&
+      message.messages.some(({ text }) => text === "hello Bob")
+  );
+  assert.equal(replay.persistent, false);
+  assert.equal(replay.messages.at(-1).nick, "Alice");
+
   gateway.kill("SIGTERM");
   await once(gateway, "exit");
 });
