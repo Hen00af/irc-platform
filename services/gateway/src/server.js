@@ -44,6 +44,20 @@ function publicEvent(message) {
       return { type: "message", target: message.params[0], ...base };
     case "NOTICE":
       return { type: "notice", target: message.params[0], ...base };
+    case "353":
+      return {
+        type: "names",
+        channel: message.params[2],
+        names: message.trailing
+          .split(/\s+/)
+          .filter(Boolean)
+          .map((name) => name.replace(/^[@+]/, "")),
+        ...base
+      };
+    case "366":
+      return { type: "names_end", channel: message.params[1], ...base };
+    case "422":
+      return { type: "server_info", ...base };
     case "JOIN":
       return {
         type: "join",
@@ -65,15 +79,6 @@ function publicEvent(message) {
         nickname: message.params[0] || message.trailing,
         ...base
       };
-    case "352":
-      return {
-        type: "who",
-        channel: message.params[1],
-        nickname: message.params[5],
-        ...base
-      };
-    case "315":
-      return { type: "who_end", channel: message.params[1], ...base };
     default:
       if (/^[45]\d\d$/.test(message.command)) {
         return { type: "error", code: message.command, ...base };
@@ -148,7 +153,6 @@ wss.on("connection", (ws) => {
           json(ws, payload);
           if (event.command === "001") {
             irc.join(joinedChannel);
-            irc.send("WHO", [joinedChannel]);
           }
           if (
             event.command === "JOIN" &&
@@ -192,7 +196,6 @@ wss.on("connection", (ws) => {
         case "join":
           irc.join(message.channel);
           joinedChannel = message.channel;
-          irc.send("WHO", [joinedChannel]);
           break;
         case "part":
           irc.part(message.channel || joinedChannel);

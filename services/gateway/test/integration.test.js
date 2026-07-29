@@ -107,6 +107,22 @@ test("bridges browser messages through the real IRC server", async (t) => {
   await waitForPort(IRC_PORT);
   await waitForHealth(`http://127.0.0.1:${WS_PORT}/health`);
   const alice = await openClient("Alice");
+  const aliceNames = await waitForMessage(
+    alice,
+    (message) =>
+      message.type === "names" &&
+      message.channel === "#lobby" &&
+      message.names.includes("Alice")
+  );
+  assert.deepEqual(aliceNames.names, ["Alice"]);
+  assert.equal(
+    alice.messages.some(
+      (message) =>
+        message.type === "error" &&
+        (message.code === "421" || message.code === "422")
+    ),
+    false
+  );
   const bob = await openClient("Bob");
   t.after(() => {
     alice.ws.close();

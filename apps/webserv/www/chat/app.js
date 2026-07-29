@@ -173,8 +173,9 @@ function onGatewayMessage(message) {
       addSystem(`${message.nick} is now ${message.nickname}`, "NICK");
       renderMembers();
       break;
-    case "who":
-      if (message.nickname) state.members.add(message.nickname);
+    case "names":
+      if (message.channel !== state.channel) break;
+      message.names.forEach((nickname) => state.members.add(nickname));
       renderMembers();
       break;
     case "error":
