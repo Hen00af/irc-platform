@@ -1,0 +1,18 @@
+# Build artifacts
+prd/ircserv
+prd/*.o
+prd/interface/*.o
+prd/domain/*.o
+prd/util/*.o
+prd/handler/*.o
+
+# Unit test artifacts
+tests/run_tests
+tests/obj/
+tests/mutation_report.md
+tests/test_results.txt
+
+# Editor / OS files
+.DS_Store
+*.swp
+*~

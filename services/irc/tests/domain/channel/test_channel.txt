@@ -1,0 +1,220 @@
+Channel テスト項目
+======================================================================
+
+1 チャンネル分の状態。Member / Operator / Invite、Topic、MODE i t k l
+
+  実行:     cd tests && make test-channel
+  生成元:   tests/domain/channel/test_channel.cpp
+  再生成:   cd tests && make spec
+
+このファイルは自動生成される。編集しても再生成で消える。
+項目を直すときはテストコードのアサーション名を直すこと。
+
+  項目数        170 (テストコード上)
+  実行時        200 件
+                ループで同じ項目を複数の値へ適用するため、実行時の方が多い
+
+======================================================================
+
+[ Constructor と初期状態 ]  19 項目
+
+    1. Channel: getName は表示名
+    2. Channel: getKeyName は正規化名
+    3. Channel: 新規 Channel の Topic は空
+    4. Channel: 新規 Channel は Topic なし
+    5. Channel: 新規 Channel は空
+    6. Channel: 新規 Channel の Member 数は 0
+    7. Channel: 新規 Channel は invite-only ではない
+    8. Channel: 新規 Channel は topic 制限が有効
+    9. Channel: 新規 Channel に Key はない
+   10. Channel: 新規 Channel の Key は空
+   11. Channel: 新規 Channel に Limit はない
+   12. Channel: 新規 Channel の Limit は 0
+   13. Channel: 新規 Channel は満員でない
+   14. Channel: 新規 Channel の Mode 文字列
+   15. Channel: Default Constructor の名前は空
+   16. Channel: Default Constructor は空
+   17. Channel: Default Constructor も topic 制限が有効
+   18. Channel: 表示名は正規化しない
+   19. Channel: Key は case mapping 済み
+
+[ Topic ]  6 項目
+
+   20. Channel: setTopic
+   21. Channel: setTopic で hasTopic
+   22. Channel: Topic の上書き
+   23. Channel: 空文字 Topic
+   24. Channel: 空文字 Topic は hasTopic が false
+   25. Channel: 空白と colon を含む Topic
+
+[ Member ]  21 項目
+
+   26. Channel: 未参加 FD の hasMember
+   27. Channel: addMember は追加時 true
+   28. Channel: addMember 後の hasMember
+   29. Channel: Member がいれば空でない
+   30. Channel: Member 数は 1
+   31. Channel: 重複 addMember は false
+   32. Channel: 重複追加しても Member 数は増えない
+   33. Channel: 2 人目の addMember
+   34. Channel: 3 人目の addMember
+   35. Channel: Member 数は 3
+   36. Channel: getMembers の要素数
+   37. Channel: getMembers に FD 3 が含まれる
+   38. Channel: getMembers に FD 5 が含まれる
+   39. Channel: removeMember は削除時 true
+   40. Channel: 削除後の hasMember
+   41. Channel: 削除後の Member 数
+   42. Channel: 未参加 FD の removeMember は false
+   43. Channel: 存在しない FD の removeMember は false
+   44. Channel: 無効な削除で Member 数は変わらない
+   45. Channel: 全員退出後は空
+   46. Channel: 全員退出後の Member 数
+
+[ Operator ]  14 項目
+
+   47. Channel: Member でない FD の addOperator は false
+   48. Channel: 追加されていないので isOperator も false
+   49. Channel: 参加直後は Operator ではない
+   50. Channel: Member なら addOperator できる
+   51. Channel: addOperator 後の isOperator
+   52. Channel: 重複 addOperator は false
+   53. Channel: removeOperator は削除時 true
+   54. Channel: removeOperator 後の isOperator
+   55. Channel: 既に Operator でない FD の removeOperator
+   56. Channel: removeOperator しても Member のまま
+   57. Channel: Operator である
+   58. Channel: removeMember で Member から消える
+   59. Channel: removeMember で Operator からも消える
+   60. Channel: 再参加しても Operator ではない
+
+[ Invite ]  9 項目
+
+   61. Channel: 未 Invite の isInvited
+   62. Channel: addInvite は追加時 true
+   63. Channel: addInvite 後の isInvited
+   64. Channel: 重複 addInvite は false
+   65. Channel: Invite されても Member ではない
+   66. Channel: removeInvite は削除時 true
+   67. Channel: removeInvite 後の isInvited
+   68. Channel: 未 Invite の removeInvite は false
+   69. Channel: removeMember は Invite を消さない
+
+[ Mode i ]  4 項目
+
+   70. Channel: i の初期値
+   71. Channel: +i
+   72. Channel: -i
+   73. Channel: -i で Invite 集合は消えない
+
+[ Mode t ]  3 項目
+
+   74. Channel: t の初期値は有効
+   75. Channel: -t
+   76. Channel: +t
+
+[ Mode k ]  24 項目
+
+   77. Channel: k の初期値
+   78. Channel: Key 未設定なら matchesKey は常に true
+   79. Channel: Key 未設定なら空 Key も true
+   80. Channel: +k で hasKey
+   81. Channel: getChannelKey
+   82. Channel: 一致する Key
+   83. Channel: 一致しない Key
+   84. Channel: 空 Key は不一致
+   85. Channel: Key は大文字小文字を区別
+   86. Channel: 前方一致では通らない
+   87. Channel: Key の置換
+   88. Channel: 置換後の新しい Key で一致
+   89. Channel: 置換後は古い Key で不一致
+   90. Channel: -k で hasKey が false
+   91. Channel: -k で Key が空
+   92. Channel: -k 後は matchesKey が常に true
+   93. Channel: -k の繰り返しも安全
+   94. Channel: 同一 Key の再設定は冪等
+   95. Channel: 空 Key でも hasKey は true (Handler が防ぐ責務)
+   96. Channel: 空 Key の getChannelKey
+   97. Channel: 空 Key は空文字と一致
+   98. Channel: 空 Key は非空文字と不一致
+   99. Channel: 空 Key でも Parameter は 1 つ出る
+  100. Channel: 空 Key の Parameter は空文字 (不正な 324 になる)
+
+[ Mode l ]  24 項目
+
+  101. Channel: l の初期値
+  102. Channel: Limit なしなら満員にならない
+  103. Channel: +l で hasUserLimit
+  104. Channel: getUserLimit
+  105. Channel: Member 0 / Limit 2 は満員でない
+  106. Channel: Member 1 / Limit 2 は満員でない
+  107. Channel: Member 2 / Limit 2 は満員
+  108. Channel: Member 数より小さい Limit も設定できる
+  109. Channel: 小さい Limit でも既存 Member は残る
+  110. Channel: Member 2 / Limit 1 は満員
+  111. Channel: Member 0 / Limit 1 は満員でない
+  112. Channel: -l で hasUserLimit が false
+  113. Channel: -l で Limit が 0
+  114. Channel: -l 後は満員にならない
+  115. Channel: -l の繰り返しも安全
+  116. Channel: Limit 1 / Member 0 は満員でない
+  117. Channel: Limit 1 / Member 1 は満員
+  118. Channel: Limit 0 でも hasUserLimit は true
+  119. Channel: Limit 0 の getUserLimit
+  120. Channel: Limit 0 は Member 0 でも満員 (誰も参加できない)
+  121. Channel: clearUserLimit は setUserLimit(0) と別状態
+  122. Channel: -l 後は Member 0 で満員でない
+  123. Channel: +i の二重適用は冪等
+  124. Channel: -t の二重適用は冪等
+
+[ Mode 文字列 ]  23 項目
+
+  125. Channel: buildModeString 既定
+  126. Channel: Mode がなければ + だけ
+  127. Channel: Mode がなければ Parameter も空
+  128. Channel: +i のみ
+  129. Channel: +it
+  130. Channel: +itk
+  131. Channel: +itkl
+  132. Channel: Parameter 数
+  133. Channel: Parameter 1 番目は Key
+  134. Channel: Parameter 2 番目は Limit
+  135. Channel: Operator がいても o は含めない
+  136. Channel: +k のみ
+  137. Channel: +k のみの Parameter 数
+  138. Channel: +k のみの Parameter
+  139. Channel: +l のみ
+  140. Channel: +l のみの Parameter 数
+  141. Channel: +l のみの Parameter は数値文字列
+  142. Channel: 逆順に設定しても Mode 文字列は itkl 順
+  143. Channel: 逆順設定でも Parameter 数
+  144. Channel: 逆順設定でも Key が先
+  145. Channel: 逆順設定でも Limit が後
+  146. Channel: buildModeString 全 16 組合せ
+  147. Channel: buildModeParameters 全 16 組合せの数
+
+[ 値としてコピーできる (std::map<string, Channel> 用) ]  23 項目
+
+  148. Channel: コピーの名前
+  149. Channel: コピーの Topic
+  150. Channel: コピーの Member
+  151. Channel: コピーの Operator
+  152. Channel: コピーの Invite
+  153. Channel: コピーの Key
+  154. Channel: コピーの Limit
+  155. Channel: コピー変更は元へ影響しない
+  156. Channel: map 経由の表示名
+  157. Channel: map 経由の Key 名
+  158. Channel: map 経由の Topic
+  159. Channel: map 経由の Member
+  160. Channel: map 経由の Member 数
+  161. Channel: map 経由の Operator
+  162. Channel: map 経由の Invite
+  163. Channel: map 経由の invite-only
+  164. Channel: map 経由の topic 制限
+  165. Channel: map 経由の hasKey
+  166. Channel: map 経由の Key
+  167. Channel: map 経由の hasUserLimit
+  168. Channel: map 経由の Limit
+  169. Channel: map 経由の Mode 文字列
+  170. Channel: map 内での変更は元へ影響しない
