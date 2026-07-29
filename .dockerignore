@@ -1,0 +1,10 @@
+.git
+.github
+.obj
+sample
+lab
+prd
+docs
+*.pdf
+*.out
+webserv

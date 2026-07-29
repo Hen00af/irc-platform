@@ -1,0 +1,20 @@
+services:
+  webserv:
+    build:
+      context: .
+    init: true
+    ports:
+      - "${WEBSERV_PORT:-8080}:8080"
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - uploads:/app/www/uploads
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  uploads:
