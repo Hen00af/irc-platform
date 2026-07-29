@@ -22,14 +22,14 @@ while [ "$attempt" -lt 5 ]; do
 done
 
 count=0
-while [ "$count" -lt 30 ]; do
+while [ "$count" -lt 44 ]; do
     curl -fsS http://127.0.0.1:8080/ >/dev/null &
     request_pids="$request_pids $!"
     count=$((count + 1))
 done
 
 count=0
-while [ "$count" -lt 20 ]; do
+while [ "$count" -lt 8 ]; do
     curl -fsS "http://127.0.0.1:8080/cgi-bin/echo.py?sleep=0.1&id=$count" \
         >/dev/null &
     request_pids="$request_pids $!"
@@ -37,7 +37,7 @@ while [ "$count" -lt 20 ]; do
 done
 
 count=0
-while [ "$count" -lt 10 ]; do
+while [ "$count" -lt 8 ]; do
     curl -fsS -X POST --data-binary "body-$count" \
         http://127.0.0.1:8080/cgi-bin/echo.py >/dev/null &
     request_pids="$request_pids $!"

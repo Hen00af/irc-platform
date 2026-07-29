@@ -3,8 +3,9 @@ CXX := c++
 CXXFLAGS := -Wall -Wextra -Werror -std=c++98 -MMD -MP
 CPPFLAGS := -Iinclude
 SRC := src/main.cpp src/Config.cpp src/Http.cpp src/Router.cpp \
-	src/ResponseFactory.cpp src/FileSystem.cpp src/StaticHandler.cpp src/UploadHandler.cpp \
-	src/DeleteHandler.cpp src/CgiHandler.cpp src/Dispatcher.cpp src/Server.cpp
+	src/ResponseFactory.cpp src/FileSystem.cpp src/StaticHandler.cpp \
+	src/UploadHandler.cpp src/DeleteHandler.cpp src/CgiHandler.cpp \
+	src/Dispatcher.cpp src/Server.cpp
 OBJ := $(SRC:src/%.cpp=.obj/%.o)
 DEP := $(OBJ:.o=.d)
 TEST_BINS := .obj/config_test .obj/router_test .obj/http_test \
@@ -40,6 +41,12 @@ integration-test: all
 stress-test: all
 	sh tests/StressTest.sh
 
+docker-build:
+	docker compose build
+
+docker-shell:
+	docker compose run --rm webserv sh
+
 $(TEST_BINS): | .obj
 
 .obj:
@@ -55,8 +62,9 @@ $(TEST_BINS): | .obj
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@
 
 .obj/dispatcher_test: tests/DispatcherTest.cpp src/Config.cpp src/Http.cpp \
-	src/Router.cpp src/ResponseFactory.cpp src/FileSystem.cpp src/StaticHandler.cpp \
-	src/UploadHandler.cpp src/DeleteHandler.cpp src/Dispatcher.cpp
+	src/Router.cpp src/ResponseFactory.cpp src/FileSystem.cpp \
+	src/StaticHandler.cpp src/UploadHandler.cpp src/DeleteHandler.cpp \
+	src/Dispatcher.cpp
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $^ -o $@
 
 .obj/cgi_handler_test: tests/CgiHandlerTest.cpp src/CgiHandler.cpp \
@@ -65,4 +73,5 @@ $(TEST_BINS): | .obj
 
 -include $(DEP)
 
-.PHONY: all clean fclean re test integration-test stress-test
+.PHONY: all clean fclean re test integration-test stress-test docker-build \
+	docker-shell

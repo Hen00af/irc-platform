@@ -16,6 +16,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends curl python3 \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --system --uid 10001 --create-home webserv
+
 WORKDIR /app
 COPY --from=build /src/webserv /app/webserv
 COPY config /app/config
