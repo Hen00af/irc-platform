@@ -1,13 +1,143 @@
-# irc-platform
+# Relay / irc-platform
 
-A browser-first chat platform built from a custom HTTP/1.1 server and IRC
-server.
+Relay is a browser-first realtime chat platform powered by two custom C++98
+protocol engines:
 
-This repository is under active development. The source projects are imported
-with their Git histories:
+- **Webserv** serves the browser client over HTTP.
+- **ft_irc** owns channels, membership, modes, and message delivery.
+- A narrow **WebSocket gateway** lets browsers speak to IRC without exposing
+  the server password or arbitrary IRC commands.
 
-- `apps/webserv` — HTTP server and static client host
-- `services/irc` — IRC protocol and realtime messaging engine
-- `services/gateway` — WebSocket-to-IRC bridge
+The source projects were imported with their Git histories. Their original 42
+repositories remain independent.
 
-The original 42 repositories remain independent.
+## Architecture
+
+```text
+Browser ── HTTPS ── Webserv
+   │
+   └──── WSS ───── Gateway ── TCP ── ft_irc
+
+Native IRC client ─────────── TLS ─── ft_irc
+```
+
+Read the detailed design in [`docs/architecture.md`](docs/architecture.md).
+
+## Repository layout
+
+```text
+apps/webserv/       C++98 HTTP server and browser client
+services/irc/       C++98 IRC server
+services/gateway/   WebSocket-to-IRC gateway
+deploy/             Process entrypoint and local Compose stack
+fly.toml            Fly.io HTTP, WebSocket, and IRC services
+```
+
+## Run locally with Docker
+
+Docker runs all three processes in the same container:
+
+```sh
+IRC_PASSWORD=choose-a-password \
+  docker compose -f deploy/docker-compose.yml up --build
+```
+
+Open:
+
+- Chat client: <http://localhost:8080/chat/>
+- Webserv health check: <http://localhost:8080/health/>
+- Gateway health check: <http://localhost:3001/health>
+- Direct IRC: `localhost:6667`
+
+Connect a native IRC client:
+
+```sh
+irssi -c localhost -p 6667 -w choose-a-password
+```
+
+Stop the stack:
+
+```sh
+docker compose -f deploy/docker-compose.yml down
+```
+
+## Run without Docker
+
+Requirements: a C++ compiler, Make, Node.js 22+, and npm.
+
+```sh
+make build
+cd services/gateway && npm install && cd ../..
+```
+
+Start each service in a separate terminal:
+
+```sh
+cd services/irc/prd
+IRC_PASSWORD=local-password ./ircserv 6667
+```
+
+```sh
+cd services/gateway
+IRC_PASSWORD=local-password npm start
+```
+
+```sh
+cd apps/webserv
+./webserv config/default.conf
+```
+
+Then open <http://localhost:8080/chat/>.
+
+## Tests
+
+```sh
+make test
+make integration-test
+```
+
+The test suite covers Webserv configuration and HTTP behavior, ft_irc parsing
+and command behavior, and gateway IRC parsing and input validation. The Docker
+validation also exercises a real WebSocket connection through the gateway into
+the IRC server.
+
+## Deploy to Fly.io
+
+The checked-in `fly.toml` exposes:
+
+| Service | Internal | Public |
+| --- | ---: | ---: |
+| Webserv HTTP | 8080 | 80 / 443 |
+| Browser gateway | 3001 | 8443 (TLS) |
+| Native IRC | 6667 | 6697 (TLS) |
+
+The IRC server is stateful in memory, so the configuration keeps one machine
+running and does not scale horizontally.
+
+```sh
+fly auth login
+fly secrets set IRC_PASSWORD='a-long-random-password'
+fly deploy
+```
+
+After deployment:
+
+- Browser: `https://hen00af-irc-platform.fly.dev/chat/`
+- IRC: `hen00af-irc-platform.fly.dev:6697` with TLS enabled
+
+Before the first deploy, confirm that the Fly app name is available. If it is
+changed, update both `app` and `ALLOWED_ORIGINS` in `fly.toml`.
+
+## Security
+
+- Never commit `IRC_PASSWORD`; use environment variables or Fly secrets.
+- The gateway enforces origin, payload, nickname, channel, message-length, and
+  rate limits.
+- Browser clients cannot send arbitrary IRC commands.
+- The production container runs as an unprivileged user with no added Linux
+  capabilities.
+- Fly terminates TLS for browser and native IRC connections.
+
+## Status
+
+This repository is private while the product and deployment are reviewed.

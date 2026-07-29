@@ -8,13 +8,14 @@
 /* ============================================================
  * エントリポイント (設計書 03 §2)
  *
- * ./ircserv <port> <password>
+ * ./ircserv <port> [password]
+ * Password may also be provided through IRC_PASSWORD.
  * ============================================================ */
 namespace
 {
     void printUsage(const char *programName)
     {
-        std::cerr << "Usage: " << programName << " <port> <password>"
+        std::cerr << "Usage: " << programName << " <port> [password]"
                   << std::endl;
     }
 
@@ -51,7 +52,7 @@ namespace
 
 int main(int argc, char **argv)
 {
-    if (argc != 3)
+    if (argc != 2 && argc != 3)
     {
         printUsage(argv[0]);
         return 1;
@@ -65,7 +66,13 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    std::string password = argv[2];
+    const char *environmentPassword = std::getenv("IRC_PASSWORD");
+    std::string password;
+
+    if (argc == 3)
+        password = argv[2];
+    else if (environmentPassword != NULL)
+        password = environmentPassword;
 
     if (password.empty())
     {

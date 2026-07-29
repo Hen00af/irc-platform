@@ -1,0 +1,12 @@
+.git
+.github
+**/.obj
+**/*.o
+apps/webserv/webserv
+services/irc/prd/ircserv
+**/node_modules
+**/tests
+**/docs
+**/lab
+**/prd/docs
+**/*.pdf
