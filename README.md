@@ -23,6 +23,14 @@ make
 curl http://localhost:8080/health/
 ```
 
+Open `http://localhost:8080/admin/` for the Webserv Control Plane. It provides
+endpoint probes and a browser-based load profile with live success,
+throughput, median, and P95 latency readouts. Load generation is restricted to
+fixed same-origin endpoints, capped at 100 requests and concurrency 8, and
+disabled unless the page is opened on `localhost`, `127.0.0.1`, or `::1`.
+This is a local development instrument, not an authenticated production admin
+panel.
+
 Run the unit and component tests:
 
 ```sh
@@ -35,8 +43,9 @@ The test suite covers configuration parsing, HTTP parsing and serialization,
 longest-prefix routing, method and redirect decisions, static files, directory
 listings, custom error pages, uploads, and deletion. Handler tests create
 isolated fixtures under `/tmp` and do not modify `www/`.
-The integration test exercises CGI GET/POST and verifies that a static request
-is still served while another CGI process is sleeping.
+The integration tests exercise CGI GET/POST, verify that a static request is
+still served while another CGI process is sleeping, and check that the Control
+Plane assets and method restrictions are served correctly.
 
 Run on Linux with Docker:
 

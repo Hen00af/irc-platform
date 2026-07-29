@@ -37,6 +37,7 @@ test: $(TEST_BINS)
 
 integration-test: all
 	sh tests/CgiIntegrationTest.sh
+	sh tests/AdminUiTest.sh
 
 stress-test: all
 	sh tests/StressTest.sh
