@@ -13,7 +13,7 @@ RUN make -j"$(nproc)"
 FROM debian:bookworm-slim
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl python3 \
+    && apt-get install -y --no-install-recommends curl python3 php-cgi \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --system --uid 10001 --create-home webserv
 

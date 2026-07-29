@@ -233,7 +233,8 @@ class ConfigParser {
             if (uniqueName == "redir")
                 uniqueName = "return";
             ConfigToken normalized(uniqueName, directive.line);
-            markUnique(seen, normalized);
+            if (uniqueName != "cgi_handler")
+                markUnique(seen, normalized);
 
             if (uniqueName == "root" && args.size() == 1) {
                 location.value.root = args[0].value;
@@ -268,6 +269,14 @@ class ConfigParser {
                 location.value.cgiExtension = args[0].value;
             } else if (uniqueName == "cgi_path" && args.size() == 1) {
                 location.value.cgiPath = args[0].value;
+            } else if (uniqueName == "cgi_handler" && args.size() == 2) {
+                if (args[0].value.empty() || args[0].value[0] != '.')
+                    throw configError(args[0].line,
+                                      "CGI extension must start with '.'");
+                if (location.value.cgiHandlers.count(args[0].value))
+                    throw configError(args[0].line,
+                                      "duplicate CGI extension");
+                location.value.cgiHandlers[args[0].value] = args[1].value;
             } else if (uniqueName == "cgi_timeout" && args.size() == 1) {
                 const size_t timeout = parseNumber(args[0]);
                 if (timeout == 0 || timeout > 300)
@@ -283,6 +292,12 @@ class ConfigParser {
         if (location.value.cgiExtension.empty() != location.value.cgiPath.empty())
             throw configError(path.line,
                               "cgi_extension and cgi_path must be configured together");
+        if (!location.value.cgiExtension.empty()) {
+            if (location.value.cgiHandlers.count(location.value.cgiExtension))
+                throw configError(path.line, "duplicate CGI extension");
+            location.value.cgiHandlers[location.value.cgiExtension] =
+                location.value.cgiPath;
+        }
         return location;
     }
 

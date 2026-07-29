@@ -16,6 +16,8 @@ int main() {
     Location location;
     location.cgiExtension = ".py";
     location.cgiPath = "/usr/bin/python3";
+    location.cgiHandlers[".py"] = "/usr/bin/python3";
+    location.cgiHandlers[".php"] = "/usr/bin/php-cgi";
     RouteResult route;
     route.location = &location;
     route.diskPath = "www/cgi-bin/echo.py";
@@ -23,6 +25,8 @@ int main() {
     expect(CgiHandler::matches(route), "configured CGI extension should match");
     route.diskPath = "www/cgi-bin/echo.txt";
     expect(!CgiHandler::matches(route), "different extension should not match");
+    route.diskPath = "www/cgi-bin/hello.php";
+    expect(CgiHandler::matches(route), "second CGI extension should match");
 
     Response response = CgiHandler::makeResponse(
         "Status: 201 Created\r\nContent-Type: text/plain\r\n"

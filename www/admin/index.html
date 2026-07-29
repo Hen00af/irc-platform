@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Webserv Control Plane</title>
+  <link rel="stylesheet" href="/admin/styles.css">
+</head>
+<body>
+  <header class="masthead">
+    <a class="wordmark" href="/" aria-label="Webserv home">
+      <span class="wordmark-mark" aria-hidden="true">W</span>
+      <span>
+        <strong>WEBSERV</strong>
+        <small>CONTROL PLANE</small>
+      </span>
+    </a>
+    <div class="masthead-status">
+      <span class="status-lamp" id="serverLamp" aria-hidden="true"></span>
+      <span id="serverStatus">Probing server</span>
+      <time id="clock" datetime=""></time>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="heroTitle">
+      <div>
+        <p class="eyebrow">POLL LOOP / LIVE INSTRUMENT</p>
+        <h1 id="heroTitle">Send a pulse.<br>Read the server.</h1>
+      </div>
+      <p class="hero-copy">
+        同一originの固定endpointへrequestを送り、成功率・遅延・throughputを観測します。
+        公開環境では負荷生成を自動的に無効化します。
+      </p>
+    </section>
+
+    <section class="pulse-panel" aria-labelledby="pulseTitle">
+      <div class="section-heading">
+        <div>
+          <p class="section-code">LIVE / 01</p>
+          <h2 id="pulseTitle">Request pulse rail</h2>
+        </div>
+        <p id="railCaption">No samples yet</p>
+      </div>
+      <div class="pulse-rail" id="pulseRail" role="img"
+           aria-label="Load test request results"></div>
+      <div class="rail-legend" aria-hidden="true">
+        <span><i class="legend-ok"></i>2xx–3xx</span>
+        <span><i class="legend-error"></i>4xx–5xx</span>
+        <span><i class="legend-abort"></i>aborted</span>
+      </div>
+    </section>
+
+    <div class="workspace">
+      <section class="control-panel" aria-labelledby="controlTitle">
+        <div class="section-heading">
+          <div>
+            <p class="section-code">CONTROL / 02</p>
+            <h2 id="controlTitle">Load profile</h2>
+          </div>
+          <span class="local-badge" id="localBadge">Checking host</span>
+        </div>
+
+        <form id="loadForm">
+          <label class="field">
+            <span>Target</span>
+            <select id="target" name="target">
+              <option value="/health/">Health / static index</option>
+              <option value="/">Home / static file</option>
+              <option value="/cgi-bin/hello.py">Python CGI</option>
+              <option value="/cgi-bin/hello.php">PHP-CGI</option>
+              <option value="/cgi-bin/slow.py?seconds=0.2">Slow CGI / 200 ms</option>
+            </select>
+          </label>
+
+          <div class="range-field">
+            <div class="range-label">
+              <label for="requests">Requests</label>
+              <output id="requestsOutput" for="requests">24</output>
+            </div>
+            <input id="requests" name="requests" type="range"
+                   min="1" max="100" value="24">
+            <div class="range-scale"><span>1</span><span>100</span></div>
+          </div>
+
+          <div class="range-field">
+            <div class="range-label">
+              <label for="concurrency">Concurrency</label>
+              <output id="concurrencyOutput" for="concurrency">4</output>
+            </div>
+            <input id="concurrency" name="concurrency" type="range"
+                   min="1" max="8" value="4">
+            <div class="range-scale"><span>1</span><span>8</span></div>
+          </div>
+
+          <div class="action-row">
+            <button class="button-primary" id="runButton" type="submit">
+              Run profile
+            </button>
+            <button class="button-secondary" id="stopButton" type="button" disabled>
+              Stop
+            </button>
+          </div>
+          <p class="control-note" id="controlNote">
+            Safety cap: 100 requests, concurrency 8, same origin only.
+          </p>
+        </form>
+      </section>
+
+      <section class="metrics-panel" aria-labelledby="metricsTitle">
+        <div class="section-heading">
+          <div>
+            <p class="section-code">READOUT / 03</p>
+            <h2 id="metricsTitle">Run metrics</h2>
+          </div>
+          <span class="run-state" id="runState">IDLE</span>
+        </div>
+
+        <dl class="metrics-grid">
+          <div>
+            <dt>Completed</dt>
+            <dd><span id="completedMetric">0</span><small>req</small></dd>
+          </div>
+          <div>
+            <dt>Success</dt>
+            <dd><span id="successMetric">—</span><small>%</small></dd>
+          </div>
+          <div>
+            <dt>Throughput</dt>
+            <dd><span id="throughputMetric">—</span><small>req/s</small></dd>
+          </div>
+          <div>
+            <dt>Median</dt>
+            <dd><span id="medianMetric">—</span><small>ms</small></dd>
+          </div>
+          <div>
+            <dt>P95</dt>
+            <dd><span id="p95Metric">—</span><small>ms</small></dd>
+          </div>
+          <div>
+            <dt>Errors</dt>
+            <dd><span id="errorMetric">0</span><small>req</small></dd>
+          </div>
+        </dl>
+      </section>
+    </div>
+
+    <section class="endpoint-panel" aria-labelledby="endpointTitle">
+      <div class="section-heading">
+        <div>
+          <p class="section-code">PROBE / 04</p>
+          <h2 id="endpointTitle">Endpoint board</h2>
+        </div>
+        <button class="text-button" id="probeButton" type="button">Probe all</button>
+      </div>
+      <div class="endpoint-grid" id="endpointGrid">
+        <article data-probe="/">
+          <p>STATIC</p><h3>/</h3><span>waiting</span>
+        </article>
+        <article data-probe="/health/">
+          <p>HEALTH</p><h3>/health/</h3><span>waiting</span>
+        </article>
+        <article data-probe="/cgi-bin/hello.py">
+          <p>PYTHON</p><h3>hello.py</h3><span>waiting</span>
+        </article>
+        <article data-probe="/cgi-bin/hello.php">
+          <p>PHP-CGI</p><h3>hello.php</h3><span>waiting</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="log-panel" aria-labelledby="logTitle">
+      <div class="section-heading">
+        <div>
+          <p class="section-code">TRACE / 05</p>
+          <h2 id="logTitle">Recent samples</h2>
+        </div>
+        <button class="text-button" id="clearButton" type="button">Clear</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Status</th>
+              <th scope="col">Latency</th>
+              <th scope="col">Target</th>
+            </tr>
+          </thead>
+          <tbody id="sampleRows">
+            <tr class="empty-row"><td colspan="4">Run a profile to collect samples.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>WEBSERV / HTTP/1.1 / C++98</span>
+    <span>Local development instrument</span>
+  </footer>
+  <script src="/admin/app.js"></script>
+</body>
+</html>

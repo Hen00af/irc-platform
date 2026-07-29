@@ -66,13 +66,28 @@ static void setResourceLimit(int resource, rlim_t value) {
     setrlimit(resource, &limit);
 }
 
+static std::string selectInterpreter(const RouteResult &route) {
+    if (!route.location)
+        return "";
+    std::string selected;
+    size_t selectedLength = 0;
+    for (std::map<std::string, std::string>::const_iterator it =
+             route.location->cgiHandlers.begin();
+         it != route.location->cgiHandlers.end(); ++it) {
+        const std::string &extension = it->first;
+        if (extension.size() > selectedLength &&
+            route.diskPath.size() >= extension.size() &&
+            route.diskPath.compare(route.diskPath.size() - extension.size(),
+                                   extension.size(), extension) == 0) {
+            selected = it->second;
+            selectedLength = extension.size();
+        }
+    }
+    return selected;
+}
+
 bool CgiHandler::matches(const RouteResult &route) {
-    if (!route.location || route.location->cgiExtension.empty())
-        return false;
-    const std::string &extension = route.location->cgiExtension;
-    return route.diskPath.size() >= extension.size() &&
-           route.diskPath.compare(route.diskPath.size() - extension.size(),
-                                  extension.size(), extension) == 0;
+    return !selectInterpreter(route).empty();
 }
 
 bool CgiHandler::start(const Request &request, const RouteResult &route,
@@ -127,7 +142,14 @@ bool CgiHandler::start(const Request &request, const RouteResult &route,
 
     const std::string script = baseName(route.diskPath);
     const std::string directory = directoryName(route.diskPath);
-    const std::string executable = route.location->cgiPath;
+    const std::string executable = selectInterpreter(route);
+    if (executable.empty()) {
+        close(inputPipe[0]);
+        close(inputPipe[1]);
+        close(outputPipe[0]);
+        close(outputPipe[1]);
+        return false;
+    }
     process.pid = fork();
     if (process.pid == 0) {
         dup2(inputPipe[0], STDIN_FILENO);
