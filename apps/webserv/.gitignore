@@ -1,0 +1,10 @@
+.obj/
+webserv
+a.out
+*.o
+.DS_Store
+nginx-1.30.0/
+sample/newb/
+sample/webserv/
+tmp.cpp
+text.txt

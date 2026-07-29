@@ -1,0 +1,15 @@
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lab-nginx
+    # ホスト 8080 は別プロジェクト(hattori-app-1)が使用中のため衝突回避。
+    # nginx はコンテナ内で 8080/8081 を listen している。
+    ports:
+      - "18080:8080"
+      - "18081:8081"
+    volumes:
+      - ./www:/workspace/www
+      - ./admin:/workspace/admin
+      - ./small-bodt-site:/workspace/small-body-site
