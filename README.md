@@ -151,8 +151,11 @@ Render publishes a single HTTPS port per service, so the container also runs
 | `/gateway/health` | Gateway health check (3001) |
 | everything else | Webserv (8080) |
 
-The edge proxy only starts when `EDGE_PROXY=on`, so Compose and Fly.io keep
-publishing the ports directly.
+The edge proxy starts automatically when the platform sets `PORT`, so Compose
+and Fly.io keep publishing the ports directly. `EDGE_PROXY=on|off` overrides
+the decision.
+
+`IRC_PASSWORD` is required; the container refuses to start without it.
 
 Deploy with the checked-in Blueprint:
 

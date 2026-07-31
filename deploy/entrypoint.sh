@@ -5,9 +5,19 @@ log() {
   echo "entrypoint: $*" >&2
 }
 
+# Single-port platforms (Render, Heroku) publish one port and announce it as
+# PORT; there the edge proxy is required. Set EDGE_PROXY explicitly to override.
+edge_proxy="${EDGE_PROXY:-}"
+if [[ -z "$edge_proxy" ]]; then
+  if [[ -n "${PORT:-}" ]]; then edge_proxy=on; else edge_proxy=off; fi
+fi
+
+log "config edge_proxy=${edge_proxy} port=${PORT:-unset} irc_port=${IRC_PORT:-6667} ws_port=${WS_PORT:-3001}"
+
 if [[ -z "${IRC_PASSWORD:-}" ]]; then
   log "IRC_PASSWORD is not set; refusing to start"
-  log "set it in the platform environment (Render: render.yaml generates it)"
+  log "set it in the platform environment (Render: Environment tab, or let"
+  log "render.yaml generate it by deploying as a Blueprint)"
   exit 1
 fi
 
@@ -37,15 +47,11 @@ start() {
   log "started ${name} (pid ${pid})"
 }
 
-log "config edge_proxy=${EDGE_PROXY:-off} port=${PORT:-unset} irc_port=${IRC_PORT:-6667} ws_port=${WS_PORT:-3001}"
-
 start irc /app/irc ./ircserv "${IRC_PORT:-6667}"
 start gateway /app/gateway node src/server.js
 start webserv /app/webserv ./webserv config/default.conf
 
-# Single-port platforms (Render) publish one port only; the edge proxy fans it
-# out to webserv and the gateway.
-if [[ "${EDGE_PROXY:-off}" == "on" ]]; then
+if [[ "$edge_proxy" == "on" ]]; then
   start edge /app node deploy/edge.js
 fi
 
