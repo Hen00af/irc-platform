@@ -12,7 +12,7 @@ if [[ -z "$edge_proxy" ]]; then
   if [[ -n "${PORT:-}" ]]; then edge_proxy=on; else edge_proxy=off; fi
 fi
 
-log "config edge_proxy=${edge_proxy} port=${PORT:-unset} irc_port=${IRC_PORT:-6667} ws_port=${WS_PORT:-3001}"
+log "config edge_proxy=${edge_proxy} port=${PORT:-unset} irc_port=${IRC_PORT:-6667} ws_port=${WS_PORT:-3001} webserv_config=${WEBSERV_CONFIG:-config/default.conf}"
 
 if [[ -z "${IRC_PASSWORD:-}" ]]; then
   log "IRC_PASSWORD is not set; refusing to start"
@@ -49,7 +49,7 @@ start() {
 
 start irc /app/irc ./ircserv "${IRC_PORT:-6667}"
 start gateway /app/gateway node src/server.js
-start webserv /app/webserv ./webserv config/default.conf
+start webserv /app/webserv ./webserv "${WEBSERV_CONFIG:-config/default.conf}"
 
 if [[ "$edge_proxy" == "on" ]]; then
   start edge /app node deploy/edge.js

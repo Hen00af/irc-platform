@@ -18,6 +18,10 @@ services:
     envVars:
       - key: EDGE_PROXY
         value: "on"
+      # 0.1 CPU on the free plan makes CGI interpreter startup exceed the
+      # 3 second timeout in default.conf.
+      - key: WEBSERV_CONFIG
+        value: config/deploy.conf
       - key: IRC_HOST
         value: 127.0.0.1
       - key: IRC_PORT

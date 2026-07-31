@@ -174,6 +174,12 @@ stops with `IRC_PASSWORD is not set`. Set the variables by hand in that case.
 
 The current deployment is <https://irc-platform.onrender.com/chat/>.
 
+`WEBSERV_CONFIG` selects the Webserv config file and defaults to
+`config/default.conf`. Render sets it to `config/deploy.conf`, which only
+raises `cgi_timeout` to 15 seconds: the free plan runs on 0.1 CPU, where
+starting `python3` or `php-cgi` alone takes about 3 seconds and every CGI
+request would otherwise return 504.
+
 Render limitations to expect:
 
 - No extra TCP ports, so native IRC clients cannot reach 6667. Only the
