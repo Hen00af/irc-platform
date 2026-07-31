@@ -24,6 +24,7 @@ Native IRC client ─────────── TLS ─── ft_irc
 ```
 
 Read the detailed design in [`docs/architecture.md`](docs/architecture.md).
+The end-user guide is [`docs/how-to-use.md`](docs/how-to-use.md) (Japanese).
 
 ## Repository layout
 

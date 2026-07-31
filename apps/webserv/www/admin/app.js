@@ -37,7 +37,12 @@
     probeButton: document.querySelector("#probeButton"),
     serverLamp: document.querySelector("#serverLamp"),
     serverStatus: document.querySelector("#serverStatus"),
-    clock: document.querySelector("#clock")
+    clock: document.querySelector("#clock"),
+    serviceNote: document.querySelector("#serviceNote"),
+    chatEndpoint: document.querySelector("#chatEndpoint"),
+    gatewayEndpoint: document.querySelector("#gatewayEndpoint"),
+    ircEndpoint: document.querySelector("#ircEndpoint"),
+    ircHint: document.querySelector("#ircHint")
   };
 
   let activeRun = null;
@@ -71,6 +76,49 @@
       minute: "2-digit",
       second: "2-digit"
     });
+  }
+
+  /* 公開先ごとにgatewayとIRCの到達点が変わる。分岐は chat/app.js の
+     gatewayUrl() と揃えてある。 */
+  function serviceEndpoints() {
+    const { protocol, hostname, host, origin } = window.location;
+    const wsProtocol = protocol === "https:" ? "wss:" : "ws:";
+
+    if (isLocal) {
+      return {
+        deployment: "Local / ports published directly",
+        chat: `${origin}/chat/`,
+        gateway: `${wsProtocol}//${hostname}:3001`,
+        irc: `${hostname}:6667`,
+        ircHint: "IRCクライアントから直接接続できます"
+      };
+    }
+    if (hostname.endsWith(".fly.dev")) {
+      return {
+        deployment: "Fly.io / TLS handlers per service",
+        chat: `${origin}/chat/`,
+        gateway: `${wsProtocol}//${hostname}:8443`,
+        irc: `${hostname}:6697`,
+        ircHint: "TLSを有効にしたIRCクライアントで接続します"
+      };
+    }
+    return {
+      deployment: "Single port / edge proxy",
+      chat: `${origin}/chat/`,
+      gateway: `${wsProtocol}//${host}/gateway/ws`,
+      irc: "127.0.0.1:6667",
+      ircHint: "コンテナ内部のみ。TCPポートを公開しないため外部からは繋がりません"
+    };
+  }
+
+  function renderServiceEndpoints() {
+    const endpoints = serviceEndpoints();
+    elements.serviceNote.textContent = endpoints.deployment;
+    elements.chatEndpoint.href = endpoints.chat;
+    elements.chatEndpoint.textContent = endpoints.chat;
+    elements.gatewayEndpoint.textContent = endpoints.gateway;
+    elements.ircEndpoint.textContent = endpoints.irc;
+    elements.ircHint.textContent = endpoints.ircHint;
   }
 
   function configureSafety() {
@@ -304,6 +352,7 @@
 
   updateRangeOutputs();
   configureSafety();
+  renderServiceEndpoints();
   updateClock();
   setInterval(updateClock, 1000);
   probeAll();

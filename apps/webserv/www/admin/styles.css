@@ -152,7 +152,7 @@ h1 {
   padding-left: 20px;
 }
 
-.pulse-panel, .control-panel, .metrics-panel,
+.service-panel, .pulse-panel, .control-panel, .metrics-panel,
 .endpoint-panel, .log-panel {
   border: 1px solid var(--line);
   background: rgba(247, 249, 250, 0.88);
@@ -160,6 +160,57 @@ h1 {
 }
 
 .pulse-panel { padding: 26px 28px 22px; }
+
+.service-panel {
+  margin-bottom: 22px;
+  padding: 26px 28px 22px;
+}
+
+.service-panel #serviceNote {
+  margin: 0;
+  color: var(--muted);
+  font: 11px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.service-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.service-grid > div {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--signal);
+  background: var(--surface);
+}
+
+.service-grid dt {
+  margin-bottom: 14px;
+  color: var(--signal-dark);
+  font: 700 9px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.09em;
+}
+
+.service-grid dd {
+  margin: 0;
+  font: 700 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow-wrap: anywhere;
+}
+
+.service-grid dd a { color: var(--ink); }
+
+.service-grid .service-hint {
+  margin-top: 8px;
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 11px;
+}
+
+@media (max-width: 860px) {
+  .service-grid { grid-template-columns: 1fr; }
+}
 
 .section-heading {
   display: flex;

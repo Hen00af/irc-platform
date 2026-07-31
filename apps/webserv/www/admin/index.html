@@ -35,6 +35,33 @@
       </p>
     </section>
 
+    <section class="service-panel" aria-labelledby="serviceTitle">
+      <div class="section-heading">
+        <div>
+          <p class="section-code">ROUTES / 00</p>
+          <h2 id="serviceTitle">Service endpoints</h2>
+        </div>
+        <p id="serviceNote">接続先を解決中</p>
+      </div>
+      <dl class="service-grid">
+        <div>
+          <dt>CHAT</dt>
+          <dd><a id="chatEndpoint" href="/chat/">/chat/</a></dd>
+          <dd class="service-hint">ブラウザから参加する画面</dd>
+        </div>
+        <div>
+          <dt>GATEWAY</dt>
+          <dd><code id="gatewayEndpoint">—</code></dd>
+          <dd class="service-hint">WebSocketの接続先</dd>
+        </div>
+        <div>
+          <dt>IRC</dt>
+          <dd><code id="ircEndpoint">—</code></dd>
+          <dd class="service-hint" id="ircHint">—</dd>
+        </div>
+      </dl>
+    </section>
+
     <section class="pulse-panel" aria-labelledby="pulseTitle">
       <div class="section-heading">
         <div>
