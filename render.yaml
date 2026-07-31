@@ -6,7 +6,7 @@
 # stays reachable inside the container for the gateway only.
 services:
   - type: web
-    name: relay
+    name: irc-platform
     runtime: docker
     # "free" spins the instance down when idle, which clears the in-memory IRC
     # state and channel history. Use "starter" to keep it running.
@@ -27,10 +27,10 @@ services:
       # Only used between the gateway and ft_irc inside the container.
       - key: IRC_PASSWORD
         generateValue: true
-      # Set to the deployed URL, e.g. https://relay.onrender.com
-      # An empty value disables the gateway's Origin check.
+      # Must match the deployed URL. An empty value disables the gateway's
+      # Origin check and lets any site open a WebSocket to it.
       - key: ALLOWED_ORIGINS
-        sync: false
+        value: https://irc-platform.onrender.com
       - key: HISTORY_LIMIT
         value: "100"
       - key: HISTORY_REPLAY_LIMIT
