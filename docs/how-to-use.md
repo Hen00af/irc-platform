@@ -5,6 +5,9 @@ Relay はブラウザから IRC を使うためのチャットです。アカウ
 
 公開URL: <https://irc-platform.onrender.com/chat/>
 
+サイト側にも機能の一覧ページがあります:
+<https://irc-platform.onrender.com/>
+
 ## ブラウザで使う
 
 1. 上のURLを開くと接続ダイアログが出ます。

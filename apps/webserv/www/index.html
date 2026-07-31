@@ -1,9 +1,401 @@
 <!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>webserv</title></head>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#12213d">
+  <title>Relay — このサイトでできること</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #12213d;
+      --ink-muted: #53627a;
+      --paper: #f4f7fb;
+      --white: #ffffff;
+      --line: #dbe2ec;
+      --cobalt: #2f6bff;
+      --cobalt-soft: #dfe8ff;
+      --signal: #ff8a3d;
+      --mint: #45d2a0;
+      --shadow: 0 24px 70px rgba(18, 33, 61, 0.12);
+      font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 0 24px 96px;
+      background: var(--paper);
+      color: var(--ink);
+      line-height: 1.7;
+    }
+
+    .wrap { max-width: 960px; margin: 0 auto; }
+
+    header {
+      padding: 64px 0 44px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 34px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-decoration: none;
+      color: var(--ink);
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 11px;
+      background: var(--ink);
+      color: var(--white);
+      font-size: 16px;
+    }
+
+    .eyebrow {
+      margin: 0 0 12px;
+      color: var(--cobalt);
+      font: 700 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: 0.16em;
+    }
+
+    h1 {
+      margin: 0 0 18px;
+      font-size: clamp(32px, 5vw, 50px);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+
+    .lede {
+      max-width: 660px;
+      margin: 0;
+      color: var(--ink-muted);
+      font-size: 17px;
+    }
+
+    section { padding-top: 54px; }
+
+    h2 {
+      margin: 0 0 6px;
+      font-size: 24px;
+      letter-spacing: -0.01em;
+    }
+
+    .section-note {
+      margin: 0 0 24px;
+      color: var(--ink-muted);
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      display: block;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--white);
+      text-decoration: none;
+      color: inherit;
+    }
+
+    a.card:hover {
+      border-color: var(--cobalt);
+      box-shadow: var(--shadow);
+    }
+
+    .card h3 {
+      margin: 0 0 4px;
+      font-size: 18px;
+    }
+
+    .card .path {
+      display: inline-block;
+      margin-bottom: 12px;
+      color: var(--cobalt);
+      font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    .card p { margin: 0; color: var(--ink-muted); font-size: 15px; }
+
+    .card.primary { border-left: 5px solid var(--signal); }
+
+    ul.plain {
+      margin: 14px 0 0;
+      padding-left: 20px;
+      color: var(--ink-muted);
+      font-size: 15px;
+    }
+
+    ul.plain li { margin-bottom: 4px; }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--white);
+    }
+
+    table { width: 100%; border-collapse: collapse; min-width: 620px; }
+
+    th, td {
+      padding: 13px 18px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      font-size: 15px;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--ink-muted);
+      font: 700 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    td code, .inline-code {
+      font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+      color: var(--ink);
+    }
+
+    td a { color: var(--cobalt); }
+
+    .status {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 999px;
+      background: var(--cobalt-soft);
+      color: var(--cobalt);
+      font: 700 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    .callout {
+      margin-top: 20px;
+      padding: 20px 24px;
+      border-left: 4px solid var(--mint);
+      border-radius: 0 12px 12px 0;
+      background: var(--white);
+      color: var(--ink-muted);
+      font-size: 15px;
+    }
+
+    .callout strong { color: var(--ink); }
+
+    footer {
+      margin-top: 64px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+      color: var(--ink-muted);
+      font-size: 14px;
+    }
+
+    footer a { color: var(--cobalt); }
+  </style>
+</head>
 <body>
-  <h1>webserv is running</h1>
-  <p>A C++98 HTTP server, ready for Linux containers.</p>
-  <p><a href="/admin/">Open the Webserv Control Plane</a></p>
+  <div class="wrap">
+    <header>
+      <a class="brand" href="/">
+        <span class="brand-mark">R</span>
+        <span>Relay</span>
+      </a>
+      <p class="eyebrow">HOW TO USE</p>
+      <h1>このサイトでできること</h1>
+      <p class="lede">
+        Relay はブラウザから IRC を使うチャットと、それを動かしている C++98 製
+        HTTP サーバの挙動を確かめられる場所です。公開しているページと
+        エンドポイントを用途ごとにまとめました。
+      </p>
+    </header>
+
+    <section>
+      <h2>1. チャットする</h2>
+      <p class="section-note">このサイトの主機能です。アカウント登録はいりません。</p>
+      <div class="cards">
+        <a class="card primary" href="/chat/">
+          <h3>ブラウザIRCチャット</h3>
+          <span class="path">/chat/</span>
+          <p>
+            ニックネームとチャンネル名を入れるだけで参加できます。参加者一覧、
+            入退室の通知、直近50件の履歴の再生に対応します。
+          </p>
+        </a>
+        <div class="card">
+          <h3>使い方と入力ルール</h3>
+          <span class="path">Enter で送信 / Shift + Enter で改行</span>
+          <ul class="plain">
+            <li>ニックネームは英字始まりで最大9文字</li>
+            <li>チャンネルは <span class="inline-code">#</span> 始まりで2〜50文字</li>
+            <li>1メッセージは420バイトまで</li>
+            <li>5秒間に12操作を超えると一時的に制限されます</li>
+            <li>ヘッダーの Change channel / Change nick で部屋と名前を変更</li>
+          </ul>
+        </div>
+      </div>
+      <div class="callout">
+        <strong>履歴はメモリ上だけです。</strong>
+        チャンネルごとに最大100件を保持し、参加時に最新50件を再生しますが、
+        サーバが再起動すると消えます。保存用のデータベースはありません。
+      </div>
+    </section>
+
+    <section>
+      <h2>2. サーバの動きを見る</h2>
+      <p class="section-note">HTTPサーバの状態を計測・確認するページです。</p>
+      <div class="cards">
+        <a class="card" href="/admin/">
+          <h3>コントロールプレーン</h3>
+          <span class="path">/admin/</span>
+          <p>
+            チャット・ゲートウェイ・IRC の接続先一覧、各エンドポイントの応答
+            コードと所要時間の測定、負荷生成（localhost のみ有効）、成功率・
+            スループット・中央値・P95 の表示。
+          </p>
+        </a>
+        <a class="card" href="/health/">
+          <h3>HTTPサーバのヘルスチェック</h3>
+          <span class="path">/health/</span>
+          <p>Webserv が応答していれば <span class="inline-code">ok</span> を返します。</p>
+        </a>
+        <a class="card" href="/gateway/health">
+          <h3>ゲートウェイのヘルスチェック</h3>
+          <span class="path">/gateway/health</span>
+          <p>
+            WebSocket ゲートウェイと接続先の IRC を JSON で返します。単一ポート
+            構成で公開している環境で利用できます。
+          </p>
+        </a>
+      </div>
+    </section>
+
+    <section>
+      <h2>3. ファイルを置く・消す</h2>
+      <p class="section-note">静的配信、ディレクトリ一覧、アップロード、削除を試せます。</p>
+      <div class="cards">
+        <a class="card" href="/upload/">
+          <h3>アップロード</h3>
+          <span class="path">GET / POST / DELETE — /upload/</span>
+          <p>
+            POST したファイルが保存され、一覧に追加されます。1リクエストの
+            上限は10MBです。DELETE で個別に削除できます。
+          </p>
+        </a>
+        <a class="card" href="/files/">
+          <h3>ファイル一覧</h3>
+          <span class="path">GET / DELETE — /files/</span>
+          <p>
+            ディレクトリの自動一覧表示（autoindex）を確認できます。中身が空の
+            場合は何も並びません。
+          </p>
+        </a>
+      </div>
+      <div class="callout">
+        コマンドラインからも試せます。<br>
+        <span class="inline-code">curl -F "file=@sample.txt" &lt;このサイトのURL&gt;/upload/</span>
+      </div>
+    </section>
+
+    <section>
+      <h2>4. CGI の挙動を確かめる</h2>
+      <p class="section-note">
+        Python と PHP のスクリプトをサーバ側で実行します。正常系だけでなく、
+        リダイレクト・任意ステータス・異常終了・時間切れも試せます。
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">エンドポイント</th>
+              <th scope="col">内容</th>
+              <th scope="col">応答</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><a href="/cgi-bin/hello.py">hello.py</a></td>
+              <td>Python による最小の CGI 応答</td>
+              <td><span class="status">200</span></td>
+            </tr>
+            <tr>
+              <td><a href="/cgi-bin/hello.php">hello.php</a></td>
+              <td>PHP-CGI による最小の CGI 応答</td>
+              <td><span class="status">200</span></td>
+            </tr>
+            <tr>
+              <td><a href="/cgi-bin/echo.py?name=relay">echo.py?name=relay</a></td>
+              <td>メソッド、クエリ、接続元アドレス、リクエストURIを返す</td>
+              <td><span class="status">200</span></td>
+            </tr>
+            <tr>
+              <td><a href="/cgi-bin/form.py?name=alice">form.py?name=alice</a></td>
+              <td>クエリと POST ボディをそのまま返す</td>
+              <td><span class="status">200</span></td>
+            </tr>
+            <tr>
+              <td><a href="/cgi-bin/cookie.py">cookie.py</a></td>
+              <td>CGI から <span class="inline-code">Set-Cookie</span> を発行する</td>
+              <td><span class="status">200</span></td>
+            </tr>
+            <tr>
+              <td><a href="/cgi-bin/session.py">session.py</a></td>
+              <td>セッションIDを発行し、2回目以降は同じIDを返す</td>
+              <td><span class="status">200</span></td>
+            </tr>
+            <tr>
+              <td><a href="/cgi-bin/redirect.py">redirect.py</a></td>
+              <td>CGI からトップページへリダイレクトする</td>
+              <td><span class="status">302</span></td>
+            </tr>
+            <tr>
+              <td><a href="/cgi-bin/status.py?code=201">status.py?code=201</a></td>
+              <td>指定したステータスコードを返す（200〜599）</td>
+              <td><span class="status">任意</span></td>
+            </tr>
+            <tr>
+              <td><a href="/cgi-bin/error.py">error.py</a></td>
+              <td>意図的に失敗するスクリプト。500 の扱いを確認する</td>
+              <td><span class="status">500</span></td>
+            </tr>
+            <tr>
+              <td><a href="/cgi-bin/slow.py?seconds=2">slow.py?seconds=2</a></td>
+              <td>指定秒数だけ停止する。制限時間を超えると打ち切られる</td>
+              <td><span class="status">200 / 504</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2>5. エラーページ</h2>
+      <p class="section-note">存在しないパスには専用の404ページを返します。</p>
+      <div class="cards">
+        <a class="card" href="/this-path-does-not-exist">
+          <h3>404 を見る</h3>
+          <span class="path">/this-path-does-not-exist</span>
+          <p>設定ファイルで指定したエラーページが表示されます。</p>
+        </a>
+      </div>
+    </section>
+
+    <footer>
+      Relay — C++98 の HTTP サーバ（Webserv）と IRC サーバ（ft_irc）を
+      WebSocket ゲートウェイでつないだ構成です。接続先の一覧は
+      <a href="/admin/">コントロールプレーン</a> で確認できます。
+    </footer>
+  </div>
 </body>
 </html>
