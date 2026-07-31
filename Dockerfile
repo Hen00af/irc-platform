@@ -41,12 +41,13 @@ COPY --from=gateway-deps /src/gateway/node_modules /app/gateway/node_modules
 COPY services/gateway/package.json /app/gateway/package.json
 COPY services/gateway/src /app/gateway/src
 COPY deploy/entrypoint.sh /app/entrypoint.sh
+COPY deploy/edge.js /app/deploy/edge.js
 
 RUN mkdir -p /app/webserv/www/uploads \
     && chown -R relay:relay /app \
     && chmod +x /app/entrypoint.sh
 
 USER relay
-EXPOSE 8080 3001 6667
+EXPOSE 8080 3001 6667 10000
 
 ENTRYPOINT ["/usr/bin/tini", "--", "/app/entrypoint.sh"]

@@ -31,9 +31,16 @@ const elements = {
 function gatewayUrl() {
   const override = new URLSearchParams(location.search).get("gateway");
   if (override) return override;
-  const local = ["localhost", "127.0.0.1", "::1"].includes(location.hostname);
   const protocol = location.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${location.hostname}:${local ? "3001" : "8443"}`;
+  // Local Compose and Fly.io publish the gateway on its own port.
+  if (["localhost", "127.0.0.1", "::1"].includes(location.hostname)) {
+    return `${protocol}//${location.hostname}:3001`;
+  }
+  if (location.hostname.endsWith(".fly.dev")) {
+    return `${protocol}//${location.hostname}:8443`;
+  }
+  // Single-port hosts (Render) reach the gateway through the edge proxy.
+  return `${protocol}//${location.host}/gateway/ws`;
 }
 
 function setConnection(level, label) {

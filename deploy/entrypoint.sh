@@ -33,6 +33,16 @@ pids+=("$!")
 ) &
 pids+=("$!")
 
+# Single-port platforms (Render) publish one port only; the edge proxy fans it
+# out to webserv and the gateway.
+if [[ "${EDGE_PROXY:-off}" == "on" ]]; then
+  (
+    cd /app
+    exec node deploy/edge.js
+  ) &
+  pids+=("$!")
+fi
+
 wait -n "${pids[@]}"
 echo "entrypoint: a service exited; stopping the deployment" >&2
 exit 1
