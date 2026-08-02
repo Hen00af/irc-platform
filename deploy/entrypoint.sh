@@ -12,7 +12,7 @@ if [[ -z "$edge_proxy" ]]; then
   if [[ -n "${PORT:-}" ]]; then edge_proxy=on; else edge_proxy=off; fi
 fi
 
-log "config edge_proxy=${edge_proxy} port=${PORT:-unset} irc_port=${IRC_PORT:-6667} ws_port=${WS_PORT:-3001} webserv_config=${WEBSERV_CONFIG:-config/default.conf}"
+log "config edge_proxy=${edge_proxy} port=${PORT:-unset} irc_port=${IRC_PORT:-6667} ws_port=${WS_PORT:-3001} webserv_config=${WEBSERV_CONFIG:-config/deploy.conf}"
 
 if [[ -z "${IRC_PASSWORD:-}" ]]; then
   log "IRC_PASSWORD is not set; refusing to start"
@@ -49,7 +49,13 @@ start() {
 
 start irc /app/irc ./ircserv "${IRC_PORT:-6667}"
 start gateway /app/gateway node src/server.js
-start webserv /app/webserv ./webserv "${WEBSERV_CONFIG:-config/default.conf}"
+# deploy.conf is the default inside the image, not default.conf: this script
+# only ever runs in a container, and a container is reachable from the
+# internet. default.conf allows POST and DELETE on /upload and /files, which
+# is fine on a laptop and is not fine on a public origin. Relying on the
+# platform to pass WEBSERV_CONFIG meant one unset variable served the
+# permissive config, which is exactly what production was doing.
+start webserv /app/webserv ./webserv "${WEBSERV_CONFIG:-config/deploy.conf}"
 
 if [[ "$edge_proxy" == "on" ]]; then
   start edge /app node deploy/edge.js
