@@ -25,9 +25,46 @@ std::string reasonPhrase(int status) {
     }
 }
 
+// Header names are compared case-insensitively: CGI scripts choose their own
+// capitalisation, and a script that sets a policy must not end up with two.
+static bool hasHeader(const std::map<std::string, std::string> &headers,
+                      const std::string &name) {
+    for (std::map<std::string, std::string>::const_iterator it = headers.begin();
+         it != headers.end(); ++it)
+        if (lower(it->first) == name)
+            return true;
+    return false;
+}
+
+// Applied to every response the server sends. The CSP is the second line of
+// defence for anything served out of an upload directory: even if a file that
+// the browser would execute reaches disk, this origin runs no script it did
+// not ship itself — script-src is the directive doing that work.
+//
+// Two directives are deliberately looser than the rest. style-src allows
+// inline because www/index.html carries a <style> block. connect-src allows
+// any ws/wss target because the chat client reaches the gateway on a separate
+// port everywhere except Render — localhost:3001 under Compose, :8443 on
+// Fly.io, and whatever ?gateway= names when debugging. Pinning it to 'self'
+// breaks all three; tighten it once the gateway is only ever same-origin.
+static const char *const SECURITY_HEADERS[][2] = {
+    {"x-content-type-options", "nosniff"},
+    {"x-frame-options", "DENY"},
+    {"referrer-policy", "no-referrer"},
+    {"content-security-policy",
+     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+     "img-src 'self' data:; connect-src 'self' ws: wss:; object-src 'none'; "
+     "base-uri 'none'; frame-ancestors 'none'"}};
+
 std::string Response::serialize() const {
     std::ostringstream out;
     out << "HTTP/1.1 " << status << " " << reasonPhrase(status) << "\r\n";
+    static const size_t securityHeaderCount =
+        sizeof(SECURITY_HEADERS) / sizeof(SECURITY_HEADERS[0]);
+    for (size_t i = 0; i < securityHeaderCount; ++i)
+        if (!hasHeader(headers, SECURITY_HEADERS[i][0]))
+            out << SECURITY_HEADERS[i][0] << ": " << SECURITY_HEADERS[i][1]
+                << "\r\n";
     for (std::map<std::string, std::string>::const_iterator it = headers.begin();
          it != headers.end(); ++it)
         out << it->first << ": " << it->second << "\r\n";

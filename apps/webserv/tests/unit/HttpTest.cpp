@@ -124,6 +124,23 @@ int main() {
            "response should include Content-Length");
     expect(serialized.find("\r\n\r\nhello") != std::string::npos,
            "response should separate headers and body");
+    expect(serialized.find("x-content-type-options: nosniff\r\n") !=
+               std::string::npos,
+           "response should refuse content sniffing");
+    expect(serialized.find("frame-ancestors 'none'") != std::string::npos,
+           "response should ship a content security policy");
+    expect(serialized.find("x-frame-options: DENY\r\n") != std::string::npos,
+           "response should refuse framing");
+
+    // A CGI script that sets its own policy keeps it, and does not end up with
+    // the default alongside it.
+    Response scripted(200);
+    scripted.headers["Content-Security-Policy"] = "default-src 'none'";
+    const std::string scriptedOut = scripted.serialize();
+    expect(scriptedOut.find("default-src 'none'") != std::string::npos,
+           "a policy set by the response should survive");
+    expect(scriptedOut.find("frame-ancestors 'none'") == std::string::npos,
+           "the default policy should not be added twice");
 
     if (g_failures != 0)
         return 1;

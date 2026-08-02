@@ -25,6 +25,7 @@ static Request makeRequest(const std::string &method, const std::string &path) {
 
 static void cleanup(const std::string &root) {
     unlink((root + "/uploads/new.txt").c_str());
+    unlink((root + "/uploads/planted.html").c_str());
     unlink((root + "/uploads/link.txt").c_str());
     unlink((root + "/escape").c_str());
     unlink((root + "/hello.txt").c_str());
@@ -116,6 +117,34 @@ int main() {
     post.headers["x-filename"] = "../escape.txt";
     response = Dispatcher::dispatch(post, config);
     expect(response.status == 400, "unsafe upload filename should return 400");
+
+    const char *const rejectedNames[] = {".hidden", "with space.txt",
+                                         "quote\".txt", "semi;colon.txt", ""};
+    for (size_t i = 0; i < sizeof(rejectedNames) / sizeof(rejectedNames[0]); ++i) {
+        post.headers["x-filename"] = rejectedNames[i];
+        response = Dispatcher::dispatch(post, config);
+        expect(response.status == 400,
+               std::string("upload filename should be refused: ") +
+                   rejectedNames[i]);
+    }
+
+    // An uploaded page must not come back as one. The name is allowed — it is
+    // the Content-Type that decides whether the browser runs it.
+    post.headers["x-filename"] = "planted.html";
+    post.body = "<script>alert(1)</script>";
+    response = Dispatcher::dispatch(post, config);
+    expect(response.status == 201, "uploading an html file should still work");
+    response = Dispatcher::dispatch(makeRequest("GET", "/upload/planted.html"), config);
+    expect(response.status == 200, "uploaded html should be retrievable");
+    expect(response.headers["Content-Type"] == "application/octet-stream",
+           "uploaded file must not be served as html");
+    expect(response.headers["Content-Disposition"] == "attachment",
+           "uploaded file should be served as a download");
+    response = Dispatcher::dispatch(makeRequest("DELETE", "/upload/planted.html"), config);
+    expect(response.status == 204, "planted upload fixture should be removed");
+
+    post.headers["x-filename"] = "new.txt";
+    post.body = "uploaded body\n";
 
     expect(symlink(root.c_str(), (root + "/uploads/link.txt").c_str()) == 0,
            "upload symlink fixture should be created");
