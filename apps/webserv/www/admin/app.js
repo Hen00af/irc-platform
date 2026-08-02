@@ -198,24 +198,35 @@
       : "No samples yet";
   }
 
+  // Cells are built as nodes rather than interpolated into markup: sample.target
+  // is a URL the operator typed, and it should never be able to become an
+  // element on this page.
+  function cell(text, className) {
+    const td = document.createElement("td");
+    td.textContent = text;
+    if (className) td.className = className;
+    return td;
+  }
+
   function renderRows() {
     elements.rows.replaceChildren();
     if (!samples.length) {
       const row = document.createElement("tr");
       row.className = "empty-row";
-      row.innerHTML = '<td colspan="4">Run a profile to collect samples.</td>';
+      const td = cell("Run a profile to collect samples.");
+      td.colSpan = 4;
+      row.append(td);
       elements.rows.append(row);
       return;
     }
     samples.slice(-12).reverse().forEach((sample) => {
       const row = document.createElement("tr");
-      const statusClass = sample.ok ? "sample-ok" : "sample-error";
-      row.innerHTML = `
-        <td>${sample.id}</td>
-        <td class="${statusClass}">${sample.status}</td>
-        <td>${Math.round(sample.latency)} ms</td>
-        <td>${sample.target}</td>
-      `;
+      row.append(
+        cell(sample.id),
+        cell(sample.status, sample.ok ? "sample-ok" : "sample-error"),
+        cell(`${Math.round(sample.latency)} ms`),
+        cell(sample.target)
+      );
       elements.rows.append(row);
     });
   }

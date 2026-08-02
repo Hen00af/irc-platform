@@ -18,6 +18,25 @@ test("keeps only the configured number of messages per channel", () => {
   );
 });
 
+test("stops remembering channels once the cap is reached", () => {
+  // Channel names cost an attacker nothing, so the map has to forget the
+  // oldest rather than grow with every name it is handed.
+  const history = new ChannelHistory({ channelLimit: 2 });
+  history.add("#one", { nick: "a", text: "first" });
+  history.add("#two", { nick: "b", text: "second" });
+  history.add("#three", { nick: "c", text: "third" });
+
+  assert.deepEqual(history.recent("#one"), []);
+  assert.equal(history.recent("#two")[0].text, "second");
+  assert.equal(history.recent("#three")[0].text, "third");
+  assert.equal(history.channels.size, 2);
+
+  // A channel already being tracked must not evict anything.
+  history.add("#two", { nick: "b", text: "again" });
+  assert.equal(history.channels.size, 2);
+  assert.equal(history.recent("#two").length, 2);
+});
+
 test("separates channel histories", () => {
   const history = new ChannelHistory();
   history.add("#one", { nick: "one", text: "first" });

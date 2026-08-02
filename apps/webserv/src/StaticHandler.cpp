@@ -112,6 +112,14 @@ Response StaticHandler::handle(const Request &request, const RouteResult &route,
         return ResponseFactory::error(413, config);
     if (readResult != FILE_OK)
         return ResponseFactory::error(403, config);
-    response.headers["Content-Type"] = mimeType(filePath);
+    // Whatever is inside an upload directory was written by a client, so it is
+    // handed back as an opaque download instead of by extension. Serving an
+    // uploaded .html as text/html would run it as a page of this origin.
+    if (route.location && !route.location->uploadDir.empty()) {
+        response.headers["Content-Type"] = "application/octet-stream";
+        response.headers["Content-Disposition"] = "attachment";
+    } else {
+        response.headers["Content-Type"] = mimeType(filePath);
+    }
     return response;
 }

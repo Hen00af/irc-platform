@@ -14,6 +14,13 @@ const IRC_PORT = Number(process.env.IRC_PORT || 6667);
 const IRC_PASSWORD = process.env.IRC_PASSWORD || "";
 const HISTORY_LIMIT = Number(process.env.HISTORY_LIMIT || 100);
 const HISTORY_REPLAY_LIMIT = Number(process.env.HISTORY_REPLAY_LIMIT || 50);
+const HISTORY_CHANNEL_LIMIT = Number(process.env.HISTORY_CHANNEL_LIMIT || 200);
+// Every browser socket opens a TCP connection to ft_irc, so these caps bound
+// the file descriptors and memory one client can take from the whole service.
+// The per-message limit below only ever bounded a single connection.
+const MAX_CONNECTIONS = Number(process.env.MAX_CONNECTIONS || 200);
+const MAX_CONNECTIONS_PER_IP = Number(process.env.MAX_CONNECTIONS_PER_IP || 5);
+const IDLE_TIMEOUT_MS = Number(process.env.IDLE_TIMEOUT_MS || 120_000);
 const ALLOWED_ORIGINS = new Set(
   (process.env.ALLOWED_ORIGINS || "")
     .split(",")
@@ -22,8 +29,22 @@ const ALLOWED_ORIGINS = new Set(
 );
 const history = new ChannelHistory({
   limit: HISTORY_LIMIT,
-  replayLimit: HISTORY_REPLAY_LIMIT
+  replayLimit: HISTORY_REPLAY_LIMIT,
+  channelLimit: HISTORY_CHANNEL_LIMIT
 });
+
+// Counted per source address. Render terminates TLS ahead of this process, so
+// the peer address is the proxy for every client and only the forwarded header
+// tells them apart.
+const connectionsPerIp = new Map();
+
+function clientAddress(request) {
+  const forwarded = request.headers["x-forwarded-for"];
+  if (typeof forwarded === "string" && forwarded.length) {
+    return forwarded.split(",")[0].trim();
+  }
+  return request.socket.remoteAddress || "unknown";
+}
 
 function log(level, event, details = {}) {
   console[level](
@@ -117,21 +138,61 @@ const server = http.createServer((request, response) => {
   response.end(JSON.stringify({ error: "not_found" }));
 });
 
+// Rejected before the handshake, so a flood never reaches the point where a
+// socket is tracked or an IRC connection is opened for it.
+function verifyClient({ origin, req }, callback) {
+  if (ALLOWED_ORIGINS.size !== 0 && !ALLOWED_ORIGINS.has(origin)) {
+    return callback(false, 403, "Origin not allowed");
+  }
+  const address = clientAddress(req);
+  if (
+    wss.clients.size >= MAX_CONNECTIONS ||
+    (connectionsPerIp.get(address) || 0) >= MAX_CONNECTIONS_PER_IP
+  ) {
+    log("warn", "connection_rejected", {
+      address,
+      total: wss.clients.size,
+      fromAddress: connectionsPerIp.get(address) || 0
+    });
+    return callback(false, 429, "Too many connections");
+  }
+  return callback(true);
+}
+
 const wss = new WebSocketServer({
   server,
   maxPayload: 8 * 1024,
-  verifyClient: ({ origin }) =>
-    ALLOWED_ORIGINS.size === 0 || ALLOWED_ORIGINS.has(origin)
+  verifyClient
 });
 
-wss.on("connection", (ws) => {
+wss.on("connection", (ws, request) => {
   let irc = null;
   let joinedChannel = null;
   const recentActions = [];
 
+  const address = clientAddress(request);
+  connectionsPerIp.set(address, (connectionsPerIp.get(address) || 0) + 1);
+
+  // A socket that opens and then says nothing still holds a slot, so idle ones
+  // are dropped. Any traffic — including the pong the browser sends back
+  // automatically — counts as alive.
+  let alive = true;
+  const heartbeat = setInterval(() => {
+    if (!alive) {
+      ws.terminate();
+      return;
+    }
+    alive = false;
+    ws.ping();
+  }, IDLE_TIMEOUT_MS);
+  ws.on("pong", () => {
+    alive = true;
+  });
+
   json(ws, { type: "hello", message: "Gateway ready" });
 
   ws.on("message", (raw) => {
+    alive = true;
     try {
       const now = Date.now();
       while (recentActions[0] < now - 5_000) recentActions.shift();
@@ -201,20 +262,27 @@ wss.on("connection", (ws) => {
       if (!irc) throw new Error("Connect before sending commands");
 
       switch (message.type) {
-        case "message":
-          irc.privmsg(message.target || joinedChannel, message.text);
-          history.add(message.target || joinedChannel, {
-            nick: irc.nickname,
-            text: String(message.text).trim()
-          });
+        case "message": {
+          const target = message.target || joinedChannel;
+          irc.privmsg(target, message.text);
+          const text = String(message.text).trim();
+          // Only the channel this connection actually joined is recorded.
+          // ft_irc rejects a PRIVMSG to a channel the sender is not in, but
+          // that rejection arrives asynchronously, so recording any target the
+          // client names would let anyone plant messages in the replay of a
+          // channel they never entered.
+          if (target === joinedChannel) {
+            history.add(target, { nick: irc.nickname, text });
+          }
           json(ws, {
             type: "message",
-            target: message.target || joinedChannel,
+            target,
             nick: irc.nickname,
-            text: String(message.text).trim(),
+            text,
             own: true
           });
           break;
+        }
         case "join":
           irc.join(message.channel);
           joinedChannel = message.channel;
@@ -235,6 +303,10 @@ wss.on("connection", (ws) => {
   });
 
   ws.on("close", () => {
+    clearInterval(heartbeat);
+    const remaining = (connectionsPerIp.get(address) || 1) - 1;
+    if (remaining > 0) connectionsPerIp.set(address, remaining);
+    else connectionsPerIp.delete(address);
     if (irc) irc.quit("Browser disconnected");
   });
 });

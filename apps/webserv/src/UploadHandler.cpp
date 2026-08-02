@@ -2,9 +2,22 @@
 #include "FileSystem.hpp"
 #include "ResponseFactory.hpp"
 
+// An allow-list, not a deny-list. The name arrives in the X-Filename header,
+// so the client picks it: anything that is not a plain [A-Za-z0-9._-] name is
+// refused, and a leading dot is refused too, which rules out dotfiles as well
+// as "." and "..".
 static bool validFileName(const std::string &name) {
-    return !name.empty() && name.find('/') == std::string::npos &&
-           name.find("..") == std::string::npos;
+    if (name.empty() || name.size() > 128 || name[0] == '.')
+        return false;
+    for (size_t i = 0; i < name.size(); ++i) {
+        const char c = name[i];
+        const bool allowed = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                             (c >= '0' && c <= '9') || c == '.' || c == '-' ||
+                             c == '_';
+        if (!allowed)
+            return false;
+    }
+    return true;
 }
 
 Response UploadHandler::handle(const Request &request, const RouteResult &route,

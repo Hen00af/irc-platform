@@ -132,8 +132,14 @@ bool CgiHandler::start(const Request &request, const RouteResult &route,
     for (std::map<std::string, std::string>::const_iterator it =
              request.headers.begin();
          it != request.headers.end(); ++it) {
-        if (it->first != "content-length" && it->first != "content-type")
-            addEnvironment(environment, headerEnvironmentName(it->first), it->second);
+        // "Proxy" is dropped rather than passed through: CGI would turn it
+        // into HTTP_PROXY, which every common HTTP client library reads as its
+        // outbound proxy. That is httpoxy (CVE-2016-5385), and it lets a
+        // request redirect the traffic a script makes on the server's behalf.
+        if (it->first == "content-length" || it->first == "content-type" ||
+            it->first == "proxy")
+            continue;
+        addEnvironment(environment, headerEnvironmentName(it->first), it->second);
     }
     std::vector<char *> envPointers;
     for (size_t i = 0; i < environment.size(); ++i)
